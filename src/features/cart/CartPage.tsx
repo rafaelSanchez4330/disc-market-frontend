@@ -36,6 +36,7 @@ export function CartPage() {
           <article key={item.id} className="flex gap-4 rounded-2xl border border-line bg-card p-3">
             <AlbumCover
               cover={item.cover}
+              imageUrl={item.imageUrl}
               title={item.name}
               artist={item.artist}
               className="w-24 shrink-0 rounded-xl"

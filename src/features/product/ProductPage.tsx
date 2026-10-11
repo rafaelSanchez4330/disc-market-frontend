@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useCart } from "../../context/CartContext";
 import { useToast } from "../../context/ToastContext";
-import { formatDuration, formatLabel, getProduct } from "../../data/products";
+import { customTemplates, formatDuration, formatLabel } from "../../data/products";
+import type { Product } from "../../data/types";
+import { productService } from "../../shared/api/services/productService";
 import { AlbumCover } from "../../shared/ui/AlbumCover";
 import { Badge } from "../../shared/ui/Badge";
 import { Button } from "../../shared/ui/Button";
@@ -11,11 +13,46 @@ import { Price } from "../../shared/ui/Price";
 
 export function ProductPage() {
   const { id } = useParams();
-  const product = getProduct(Number(id));
+  const productIdNum = Number(id);
+  const [product, setProduct] = useState<Product | null>(null);
+  const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
   const { addItem } = useCart();
   const { push } = useToast();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    setLoading(true);
+
+    // Buscar primero en la API de productos
+    productService
+      .getProductById(productIdNum)
+      .then((data) => {
+        setProduct(data);
+      })
+      .catch(() => {
+        // Fallback: verificar si es una plantilla personalizada local
+        const customTemplate = customTemplates.find((t) => t.productId === productIdNum);
+        setProduct(customTemplate || null);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, [productIdNum]);
+
+  if (loading) {
+    return (
+      <div className="grid gap-10 lg:grid-cols-2">
+        <div className="aspect-square animate-pulse rounded-3xl border border-line bg-card/60" />
+        <div className="space-y-5">
+          <div className="h-6 w-32 animate-pulse rounded-full bg-card" />
+          <div className="h-12 w-3/4 animate-pulse rounded-xl bg-card" />
+          <div className="h-8 w-24 animate-pulse rounded-lg bg-card" />
+          <div className="h-24 w-full animate-pulse rounded-xl bg-card" />
+        </div>
+      </div>
+    );
+  }
 
   if (!product) {
     return (
@@ -38,6 +75,7 @@ export function ProductPage() {
       format: selected.format,
       unitPrice: selected.price,
       cover: selected.cover,
+      imageUrl: selected.imageUrl,
       quantity,
     });
     push("Agregado al carrito");
@@ -47,6 +85,7 @@ export function ProductPage() {
     <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
       <AlbumCover
         cover={selected.cover}
+        imageUrl={selected.imageUrl}
         title={selected.name}
         artist={selected.artist}
         className="max-w-xl rounded-3xl"
@@ -66,7 +105,9 @@ export function ProductPage() {
         <p className="max-w-xl text-muted">{selected.description}</p>
 
         {selected.isCustomizable ? (
-          <Button onClick={() => navigate(`/crear?formato=${selected.format}`)}>Personalizar este producto</Button>
+          <Button onClick={() => navigate(`/crear?formato=${selected.format}`)}>
+            Personalizar este producto
+          </Button>
         ) : (
           <div className="flex flex-wrap items-center gap-3">
             <label className="flex items-center gap-2 rounded-full border border-line px-3 py-2 text-sm">
