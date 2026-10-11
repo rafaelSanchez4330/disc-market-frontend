@@ -9,7 +9,12 @@ export function ProductCard({ product }: { product: Product }) {
   return (
     <article className="group overflow-hidden rounded-2xl border border-line bg-card transition duration-200 hover:-translate-y-1 hover:border-accent/70">
       <Link to={`/productos/${product.productId}`} className="block">
-        <AlbumCover cover={product.cover} title={product.name} artist={product.artist} />
+        <AlbumCover
+          cover={product.cover}
+          imageUrl={product.imageUrl}
+          title={product.name}
+          artist={product.artist}
+        />
         <div className="space-y-3 p-4">
           <div className="flex items-start justify-between gap-3">
             <div>

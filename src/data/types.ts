@@ -30,6 +30,7 @@ export type Product = {
   isCustomizable: boolean;
   availabilityStatus: Availability;
   cover: CoverTheme;
+  imageUrl?: string | null;
   tracks: ProductTrack[];
 };
 
@@ -43,6 +44,7 @@ export type CartItem = {
   quantity: number;
   unitPrice: number;
   cover: CoverTheme;
+  imageUrl?: string | null;
   customSummary?: string;
 };
 
