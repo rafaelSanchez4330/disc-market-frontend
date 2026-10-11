@@ -9,15 +9,26 @@ export function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  function onSubmit(e: FormEvent) {
+  async function onSubmit(e: FormEvent) {
     e.preventDefault();
     if (!email.includes("@") || password.length < 4) {
       setError("Usa un correo válido y una contraseña de al menos 4 caracteres.");
       return;
     }
-    login(email);
-    navigate("/");
+
+    setError("");
+    setLoading(true);
+
+    try {
+      await login(email, password);
+      navigate("/");
+    } catch (err: any) {
+      setError(err?.message || "Error al iniciar sesión. Verifica tus credenciales.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -30,6 +41,7 @@ export function LoginPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="w-full rounded-xl border border-line bg-ink px-3 py-2"
+            disabled={loading}
             required
           />
         </label>
@@ -40,12 +52,13 @@ export function LoginPage() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className="w-full rounded-xl border border-line bg-ink px-3 py-2"
+            disabled={loading}
             required
           />
         </label>
         {error ? <p className="text-sm text-vinyl">{error}</p> : null}
-        <Button type="submit" className="w-full">
-          Entrar
+        <Button type="submit" className="w-full" disabled={loading}>
+          {loading ? "Entrando..." : "Entrar"}
         </Button>
         <p className="text-center text-sm text-muted">
           ¿No tienes cuenta?{" "}
