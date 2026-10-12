@@ -137,7 +137,9 @@ export function mapBackendCartItem(item: BackendCartItem): CartItem {
 
     return {
       id: `ci-${item.cart_item_id}`,
+      cartItemId: item.cart_item_id,
       customId: `custom-${cp.custom_product_id}`,
+      customProductId: cp.custom_product_id,
       productId: cp.custom_product_id,
       name: cp.title,
       artist: "Edición personalizada",
@@ -161,6 +163,7 @@ export function mapBackendCartItem(item: BackendCartItem): CartItem {
 
   return {
     id: `ci-${item.cart_item_id}`,
+    cartItemId: item.cart_item_id,
     productId: item.product_id || undefined,
     name,
     artist,

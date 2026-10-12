@@ -36,8 +36,10 @@ export type Product = {
 
 export type CartItem = {
   id: string;
+  cartItemId?: number;
   productId?: number;
   customId?: string;
+  customProductId?: number;
   name: string;
   artist: string | null;
   format: Format;

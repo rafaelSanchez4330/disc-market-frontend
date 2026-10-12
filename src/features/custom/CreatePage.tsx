@@ -75,6 +75,7 @@ export function CreatePage() {
       // 2. Agregar ítem al carrito de la aplicación con la URL real del archivo
       addItem({
         customId: `custom-${created.custom_product_id}`,
+        customProductId: created.custom_product_id,
         productId: template.productId,
         name: created.title,
         artist: "Tu edición",
