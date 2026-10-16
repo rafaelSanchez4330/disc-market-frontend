@@ -8,5 +8,6 @@ personalizados, Stripe, hosting, cambios de código y trabajo con Git:
 En el workspace local está en `../../disc-market-backend/docs/GUIA-ESTUDIO.md`.
 
 La revisión corresponde al 16 de octubre de 2026, después de integrar main.
-Stripe está en el código actualizado; no se ha desplegado esa nueva integración
-al VPS como parte de esta documentación. No confundir push con despliegue.
+Stripe ya se desplegó al VPS en modo test con la migración de pagos.
+Falta verificar un pago completo y una entrega real del webhook en el hosting.
+No confundir push con despliegue.

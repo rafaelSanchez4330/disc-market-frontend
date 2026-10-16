@@ -47,6 +47,10 @@ dependencias en Linux y se compiló allí. No se transfirieron `.env`, `.git`,
 dependencias de Windows ni uploads locales. No hay CI/CD: un push no despliega.
 La base del VPS es distinta de la base local.
 
+Actualización Stripe desplegada en modo test: release `20261016T073316Z`.
+El código nuevo está en `/opt/disc-market/releases/20261016T073316Z/frontend`;
+`/var/www/disc-market` enlaza a su `dist`. El formulario usa la clave publicable
+del entorno de prueba. No hay claves secretas en el frontend.
 Frontend, API, catálogo de 8 productos y HTTPS fueron verificados.
 El sitio sigue como demo hasta corregir los permisos del backend documentados
 en la guía completa; no se probó una compra real.
