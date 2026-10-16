@@ -1,12 +1,32 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { customTemplates, products } from "../../data/products";
+import { customTemplates } from "../../data/products";
+import type { Product } from "../../data/types";
+import { productService } from "../../shared/api/services/productService";
 import { Button } from "../../shared/ui/Button";
 import { ProductCard } from "../../shared/ui/ProductCard";
 
 export function HomePage() {
-  const featured = products.filter((p) => p.productType === "REGULAR").slice(0, 4);
-  const cds = products.filter((p) => p.format === "CD" && p.productType === "REGULAR").slice(0, 3);
-  const vinyls = products.filter((p) => p.format === "VINYL" && p.productType === "REGULAR").slice(0, 3);
+  const [productsList, setProductsList] = useState<Product[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+
+  useEffect(() => {
+    productService
+      .getProducts()
+      .then((data) => {
+        setProductsList(data);
+      })
+      .catch((err) => {
+        console.error("Error al cargar productos en HomePage:", err);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, []);
+
+  const featured = productsList.filter((p) => p.productType === "REGULAR").slice(0, 4);
+  const cds = productsList.filter((p) => p.format === "CD" && p.productType === "REGULAR").slice(0, 3);
+  const vinyls = productsList.filter((p) => p.format === "VINYL" && p.productType === "REGULAR").slice(0, 3);
 
   return (
     <div className="space-y-16">
@@ -28,6 +48,7 @@ export function HomePage() {
         </div>
       </section>
 
+      {/* Sección Destacados */}
       <section className="space-y-6">
         <div className="flex items-end justify-between">
           <h2 className="font-display text-3xl">Destacados</h2>
@@ -35,18 +56,29 @@ export function HomePage() {
             Ver todo
           </Link>
         </div>
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {featured.map((product) => (
-            <ProductCard key={product.productId} product={product} />
-          ))}
-        </div>
+
+        {loading ? (
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="h-72 animate-pulse rounded-2xl border border-line bg-card/60" />
+            ))}
+          </div>
+        ) : (
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {featured.map((product) => (
+              <ProductCard key={product.productId} product={product} />
+            ))}
+          </div>
+        )}
       </section>
 
+      {/* Bloques por formato */}
       <section className="grid gap-6 md:grid-cols-2">
-        <FormatBlock title="CDs" to="/cds" items={cds} />
-        <FormatBlock title="Vinilos" to="/vinilos" items={vinyls} />
+        <FormatBlock title="CDs" to="/cds" items={cds} loading={loading} />
+        <FormatBlock title="Vinilos" to="/vinilos" items={vinyls} loading={loading} />
       </section>
 
+      {/* Productos personalizados */}
       <section className="rounded-3xl border border-line bg-card p-6 md:p-10">
         <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
           <div>
@@ -71,10 +103,12 @@ function FormatBlock({
   title,
   to,
   items,
+  loading,
 }: {
   title: string;
   to: string;
-  items: typeof products;
+  items: Product[];
+  loading: boolean;
 }) {
   return (
     <div className="rounded-3xl border border-line bg-ink-soft p-5">
@@ -84,11 +118,19 @@ function FormatBlock({
           Explorar
         </Link>
       </div>
-      <div className="grid gap-4 sm:grid-cols-3 md:grid-cols-1 lg:grid-cols-3">
-        {items.map((product) => (
-          <ProductCard key={product.productId} product={product} />
-        ))}
-      </div>
+      {loading ? (
+        <div className="grid gap-4 sm:grid-cols-3 md:grid-cols-1 lg:grid-cols-3">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="h-44 animate-pulse rounded-xl border border-line bg-card/50" />
+          ))}
+        </div>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-3 md:grid-cols-1 lg:grid-cols-3">
+          {items.map((product) => (
+            <ProductCard key={product.productId} product={product} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
