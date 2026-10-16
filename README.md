@@ -1,5 +1,10 @@
 # disc-market-frontend
 
+[Preguntas y respuestas para estudiar](docs/GUIA-ESTUDIO.md).
+
+Guía del sitio publicado en https://vinylhrz.tech: [docs/DESPLIEGUE.md](docs/DESPLIEGUE.md).
+
+
 Cliente web de **Disc Market**. UI en español.
 
 - Stack: React + TypeScript + Vite + Tailwind
