@@ -30,19 +30,23 @@ export type Product = {
   isCustomizable: boolean;
   availabilityStatus: Availability;
   cover: CoverTheme;
+  imageUrl?: string | null;
   tracks: ProductTrack[];
 };
 
 export type CartItem = {
   id: string;
+  cartItemId?: number;
   productId?: number;
   customId?: string;
+  customProductId?: number;
   name: string;
   artist: string | null;
   format: Format;
   quantity: number;
   unitPrice: number;
   cover: CoverTheme;
+  imageUrl?: string | null;
   customSummary?: string;
 };
 

@@ -1,7 +1,9 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useSearchParams } from "react-router-dom";
-import { formatLabel, products } from "../../data/products";
-import type { Format } from "../../data/types";
+import { customTemplates, formatLabel } from "../../data/products";
+import type { Format, Product } from "../../data/types";
+import { productService } from "../../shared/api/services/productService";
+import type { BackendCategory } from "../../shared/api/types";
 import { EmptyState } from "../../shared/ui/EmptyState";
 import { ProductCard } from "../../shared/ui/ProductCard";
 
@@ -12,19 +14,49 @@ type Props = {
 export function CatalogPage({ presetFormat }: Props) {
   const [params, setParams] = useSearchParams();
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [productsList, setProductsList] = useState<Product[]>([]);
+  const [categoriesList, setCategoriesList] = useState<BackendCategory[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const format = presetFormat ?? (params.get("formato") as Format | null);
   const category = params.get("categoria") ?? "";
   const artist = params.get("artista") ?? "";
   const maxPrice = Number(params.get("precio") ?? 0);
 
-  const artists = useMemo(
-    () => [...new Set(products.map((p) => p.artist).filter((a): a is string => Boolean(a)))].sort(),
-    [],
-  );
-  const categories = useMemo(() => [...new Set(products.map((p) => p.category))].sort(), []);
+  // Cargar productos y categorías del backend
+  useEffect(() => {
+    setLoading(true);
 
-  const visible = products.filter((product) => {
+    Promise.all([
+      productService.getProducts(),
+      productService.getCategories().catch(() => []),
+    ])
+      .then(([productsData, categoriesData]) => {
+        // Incluir las plantillas personalizadas en la lista si se selecciona "Custom"
+        const allProducts = [...productsData, ...customTemplates];
+        setProductsList(allProducts);
+        setCategoriesList(categoriesData);
+      })
+      .catch((err) => {
+        console.error("Error al cargar datos en CatalogPage:", err);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, []);
+
+  const artists = useMemo(
+    () =>
+      [...new Set(productsList.map((p) => p.artist).filter((a): a is string => Boolean(a)))].sort(),
+    [productsList]
+  );
+
+  const availableCategories = useMemo(() => {
+    const fromApi = categoriesList.map((c) => c.category_name);
+    return [...new Set([...fromApi, "Custom"])].sort();
+  }, [categoriesList]);
+
+  const visible = productsList.filter((product) => {
     if (format && product.format !== format) return false;
     if (category && product.category !== category) return false;
     if (artist && product.artist !== artist) return false;
@@ -32,7 +64,11 @@ export function CatalogPage({ presetFormat }: Props) {
     return true;
   });
 
-  const title = presetFormat ? formatLabel[presetFormat] : category === "Custom" ? "Productos personalizados" : "Catálogo";
+  const title = presetFormat
+    ? formatLabel[presetFormat]
+    : category === "Custom"
+      ? "Productos personalizados"
+      : "Catálogo";
 
   function setFilter(key: string, value: string) {
     const next = new URLSearchParams(params);
@@ -63,7 +99,7 @@ export function CatalogPage({ presetFormat }: Props) {
           className="w-full rounded-xl border border-line bg-ink px-3 py-2"
         >
           <option value="">Todas</option>
-          {categories.map((item) => (
+          {availableCategories.map((item) => (
             <option key={item} value={item}>
               {item}
             </option>
@@ -105,7 +141,7 @@ export function CatalogPage({ presetFormat }: Props) {
         <div>
           <p className="text-sm tracking-widest text-accent uppercase">Tienda</p>
           <h1 className="font-display text-4xl">{title}</h1>
-          <p className="mt-2 text-muted">{visible.length} productos</p>
+          <p className="mt-2 text-muted">{loading ? "Cargando..." : `${visible.length} productos`}</p>
         </div>
         <button
           type="button"
@@ -119,7 +155,13 @@ export function CatalogPage({ presetFormat }: Props) {
       <div className="grid gap-8 lg:grid-cols-[240px_1fr]">
         <aside className="hidden lg:block">{filters}</aside>
         <div>
-          {visible.length ? (
+          {loading ? (
+            <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="h-80 animate-pulse rounded-2xl border border-line bg-card/60" />
+              ))}
+            </div>
+          ) : visible.length ? (
             <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
               {visible.map((product) => (
                 <ProductCard key={product.productId} product={product} />
@@ -134,14 +176,21 @@ export function CatalogPage({ presetFormat }: Props) {
       </div>
 
       {filtersOpen ? (
-        <div className="fixed inset-0 z-50 bg-black/60 lg:hidden" onClick={() => setFiltersOpen(false)}>
+        <div
+          className="fixed inset-0 z-50 bg-black/60 lg:hidden"
+          onClick={() => setFiltersOpen(false)}
+        >
           <div
             className="absolute inset-x-0 bottom-0 rounded-t-3xl border-t border-line bg-ink p-5"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-4 flex items-center justify-between">
               <h2 className="font-display text-xl">Filtros</h2>
-              <button type="button" onClick={() => setFiltersOpen(false)} className="text-muted">
+              <button
+                type="button"
+                onClick={() => setFiltersOpen(false)}
+                className="text-muted"
+              >
                 Cerrar
               </button>
             </div>

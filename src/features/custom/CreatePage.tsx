@@ -4,6 +4,9 @@ import { useCart } from "../../context/CartContext";
 import { useToast } from "../../context/ToastContext";
 import { customTemplates, formatLabel, formatPrice } from "../../data/products";
 import type { CustomDraft, Format } from "../../data/types";
+import { resolveAssetUrl } from "../../shared/api/mappers";
+import { customProductService } from "../../shared/api/services/customProductService";
+import { AlbumCover } from "../../shared/ui/AlbumCover";
 import { Button } from "../../shared/ui/Button";
 
 const steps = ["Formato", "Pistas", "Portada", "Detalles", "Resumen"] as const;
@@ -22,6 +25,10 @@ export function CreatePage() {
   const initialFormat = (params.get("formato") as Format | null) === "VINYL" ? "VINYL" : "CD";
   const [step, setStep] = useState(0);
   const [draft, setDraft] = useState<CustomDraft>(() => emptyDraft(initialFormat));
+  const [coverFile, setCoverFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
   const { addItem } = useCart();
   const { push } = useToast();
   const navigate = useNavigate();
@@ -35,19 +42,75 @@ export function CreatePage() {
     setStep((s) => Math.min(s + 1, steps.length - 1));
   }
 
-  function addToCart() {
-    addItem({
-      customId: `custom-${Date.now()}`,
-      productId: template.productId,
-      name: draft.title || template.name,
-      artist: "Tu edición",
-      format: draft.format,
-      unitPrice: template.price,
-      cover: template.cover,
-      customSummary: `${draft.tracks.length} pistas · ${packagingLabel[draft.packaging]}${draft.coverName ? ` · ${draft.coverName}` : ""}`,
-    });
-    push("Producto personalizado en el carrito");
-    navigate("/carrito");
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0] || null;
+    setCoverFile(file);
+    if (file) {
+      setDraft((d) => ({ ...d, coverName: file.name }));
+      const url = URL.createObjectURL(file);
+      setPreviewUrl(url);
+    } else {
+      setDraft((d) => ({ ...d, coverName: null }));
+      setPreviewUrl(null);
+    }
+  }
+
+  async function addToCart() {
+    setSubmitting(true);
+
+    try {
+      // 1. Guardar producto personalizado en PostgreSQL con su portada en Multer
+      const created = await customProductService.create({
+        format: draft.format,
+        title: draft.title || template.name,
+        message: draft.message,
+        packaging: draft.packaging,
+        price: template.price,
+        coverFile: coverFile,
+        tracks: draft.tracks,
+      });
+
+      const serverImageUrl = resolveAssetUrl(created.cover_image);
+
+      // 2. Agregar ítem al carrito de la aplicación con la URL real del archivo
+      addItem({
+        customId: `custom-${created.custom_product_id}`,
+        customProductId: created.custom_product_id,
+        productId: template.productId,
+        name: created.title,
+        artist: "Tu edición",
+        format: draft.format,
+        unitPrice: template.price,
+        cover: template.cover,
+        imageUrl: serverImageUrl || previewUrl,
+        customSummary: `${draft.tracks.length} pistas · ${packagingLabel[draft.packaging]}${
+          draft.coverName ? ` · ${draft.coverName}` : ""
+        }`,
+      });
+
+      push("¡Disco personalizado creado y guardado en la base de datos!");
+      navigate("/carrito");
+    } catch (err: any) {
+      console.warn("Error al guardar en backend, usando fallback local:", err);
+      // Fallback local en caso de error de red
+      addItem({
+        customId: `custom-${Date.now()}`,
+        productId: template.productId,
+        name: draft.title || template.name,
+        artist: "Tu edición",
+        format: draft.format,
+        unitPrice: template.price,
+        cover: template.cover,
+        imageUrl: previewUrl,
+        customSummary: `${draft.tracks.length} pistas · ${packagingLabel[draft.packaging]}${
+          draft.coverName ? ` · ${draft.coverName}` : ""
+        }`,
+      });
+      push("Agregado al carrito localmente");
+      navigate("/carrito");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -101,11 +164,11 @@ export function CreatePage() {
             }
             onMove={(index, dir) =>
               setDraft((d) => {
-                const next = [...d.tracks];
+                const nextTracks = [...d.tracks];
                 const target = index + dir;
-                if (target < 0 || target >= next.length) return d;
-                [next[index], next[target]] = [next[target], next[index]];
-                return { ...d, tracks: next.map((track, i) => ({ ...track, order: i + 1 })) };
+                if (target < 0 || target >= nextTracks.length) return d;
+                [nextTracks[index], nextTracks[target]] = [nextTracks[target], nextTracks[index]];
+                return { ...d, tracks: nextTracks.map((track, i) => ({ ...track, order: i + 1 })) };
               })
             }
             onRemove={(index) =>
@@ -118,16 +181,29 @@ export function CreatePage() {
         ) : null}
 
         {step === 2 ? (
-          <label className="block space-y-3">
-            <span className="text-muted">Sube una imagen para la portada o la etiqueta</span>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) => setDraft((d) => ({ ...d, coverName: e.target.files?.[0]?.name ?? null }))}
-              className="block w-full text-sm"
-            />
-            <p className="text-sm text-cream">{draft.coverName ?? "Aún no eliges una imagen."}</p>
-          </label>
+          <div className="space-y-4">
+            <label className="block space-y-3">
+              <span className="text-muted">Sube una imagen para la portada o la etiqueta (JPEG, PNG o WebP)</span>
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={handleFileChange}
+                className="block w-full text-sm text-cream file:mr-4 file:rounded-xl file:border-0 file:bg-line file:px-4 file:py-2 file:text-sm file:text-cream hover:file:bg-line/80"
+              />
+              <p className="text-sm text-cream">{draft.coverName ?? "Aún no eliges una imagen."}</p>
+            </label>
+
+            {previewUrl ? (
+              <div className="mt-4 flex flex-col items-center gap-2 rounded-2xl border border-line bg-ink p-4">
+                <p className="text-xs text-muted">Vista previa de la carátula:</p>
+                <img
+                  src={previewUrl}
+                  alt="Vista previa"
+                  className="h-48 w-48 rounded-xl object-cover shadow-lg"
+                />
+              </div>
+            ) : null}
+          </div>
         ) : null}
 
         {step === 3 ? (
@@ -165,42 +241,61 @@ export function CreatePage() {
         ) : null}
 
         {step === 4 ? (
-          <div className="space-y-3 text-sm">
-            <p>
-              <span className="text-muted">Formato: </span>
-              {formatLabel[draft.format]} · {formatPrice(template.price)}
-            </p>
-            <p>
-              <span className="text-muted">Título: </span>
-              {draft.title || "Sin título"}
-            </p>
-            <p>
-              <span className="text-muted">Portada: </span>
-              {draft.coverName || "Sin imagen"}
-            </p>
-            <p>
-              <span className="text-muted">Empaque: </span>
-              {packagingLabel[draft.packaging]}
-            </p>
-            <p>
-              <span className="text-muted">Mensaje: </span>
-              {draft.message || "—"}
-            </p>
-            <p className="text-muted">Pistas</p>
-            <ol className="list-decimal space-y-1 pl-5">
-              {draft.tracks.length ? draft.tracks.map((track) => <li key={track.order}>{track.name}</li>) : <li>Ninguna aún</li>}
-            </ol>
+          <div className="grid gap-6 md:grid-cols-[180px_1fr]">
+            <AlbumCover
+              cover={template.cover}
+              imageUrl={previewUrl}
+              title={draft.title || template.name}
+              artist="Tu edición"
+              className="rounded-2xl"
+            />
+            <div className="space-y-3 text-sm">
+              <p>
+                <span className="text-muted">Formato: </span>
+                {formatLabel[draft.format]} · {formatPrice(template.price)}
+              </p>
+              <p>
+                <span className="text-muted">Título: </span>
+                {draft.title || "Sin título"}
+              </p>
+              <p>
+                <span className="text-muted">Portada: </span>
+                {draft.coverName || "Diseño predeterminado"}
+              </p>
+              <p>
+                <span className="text-muted">Empaque: </span>
+                {packagingLabel[draft.packaging]}
+              </p>
+              <p>
+                <span className="text-muted">Mensaje: </span>
+                {draft.message || "—"}
+              </p>
+              <p className="text-muted">Pistas ({draft.tracks.length}):</p>
+              <ol className="list-decimal space-y-1 pl-5">
+                {draft.tracks.length ? (
+                  draft.tracks.map((track) => <li key={track.order}>{track.name}</li>)
+                ) : (
+                  <li>Ninguna especificada</li>
+                )}
+              </ol>
+            </div>
           </div>
         ) : null}
 
         <div className="mt-8 flex flex-wrap justify-between gap-3">
-          <Button variant="ghost" onClick={() => setStep((s) => Math.max(0, s - 1))} disabled={step === 0}>
+          <Button
+            variant="ghost"
+            onClick={() => setStep((s) => Math.max(0, s - 1))}
+            disabled={step === 0 || submitting}
+          >
             Atrás
           </Button>
           {step < steps.length - 1 ? (
             <Button onClick={next}>Continuar</Button>
           ) : (
-            <Button onClick={addToCart}>Agregar al carrito</Button>
+            <Button onClick={addToCart} disabled={submitting}>
+              {submitting ? "Guardando en servidor..." : "Agregar al carrito"}
+            </Button>
           )}
         </div>
       </section>
@@ -238,13 +333,13 @@ function TrackStep({
 
   return (
     <div className="space-y-4">
-      <p className="text-muted">Sube o nombra las pistas y ordénalas como quieras que suenen.</p>
+      <p className="text-muted">Agrega los títulos de las pistas y ordénalas según como quieras que suenen.</p>
       <div className="flex flex-col gap-2 sm:flex-row">
         <input
           value={name}
           onChange={(e) => setName(e.target.value)}
           className="flex-1 rounded-xl border border-line bg-ink px-3 py-2"
-          placeholder="Nombre de la pista o archivo"
+          placeholder="Nombre de la canción o pista"
         />
         <Button
           type="button"
@@ -259,18 +354,33 @@ function TrackStep({
       </div>
       <ul className="space-y-2">
         {tracks.map((track, index) => (
-          <li key={`${track.order}-${track.name}`} className="flex items-center justify-between rounded-xl border border-line px-3 py-2">
+          <li
+            key={`${track.order}-${track.name}`}
+            className="flex items-center justify-between rounded-xl border border-line px-3 py-2"
+          >
             <span>
               {track.order}. {track.name}
             </span>
             <div className="flex gap-2 text-sm">
-              <button type="button" onClick={() => onMove(index, -1)} className="text-muted hover:text-cream">
+              <button
+                type="button"
+                onClick={() => onMove(index, -1)}
+                className="text-muted hover:text-cream"
+              >
                 Subir
               </button>
-              <button type="button" onClick={() => onMove(index, 1)} className="text-muted hover:text-cream">
+              <button
+                type="button"
+                onClick={() => onMove(index, 1)}
+                className="text-muted hover:text-cream"
+              >
                 Bajar
               </button>
-              <button type="button" onClick={() => onRemove(index)} className="text-vinyl">
+              <button
+                type="button"
+                onClick={() => onRemove(index)}
+                className="text-vinyl"
+              >
                 Quitar
               </button>
             </div>
