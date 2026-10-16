@@ -5,6 +5,8 @@ import { useCart } from "../../context/CartContext";
 import { useToast } from "../../context/ToastContext";
 import { formatLabel, formatPrice } from "../../data/products";
 import { orderService } from "../../shared/api/services/orderService";
+import { paymentService } from "../../shared/api/services/paymentService";
+import { StripeCheckoutModal } from "./components/StripeCheckoutModal";
 import { AlbumCover } from "../../shared/ui/AlbumCover";
 import { Button } from "../../shared/ui/Button";
 import { EmptyState } from "../../shared/ui/EmptyState";
@@ -21,6 +23,9 @@ export function CartPage() {
   );
   const [paymentMethod, setPaymentMethod] = useState("credit_card");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [stripeClientSecret, setStripeClientSecret] = useState<string | null>(null);
+  const [stripeAmount, setStripeAmount] = useState<number>(0);
+  const [isStripeModalOpen, setIsStripeModalOpen] = useState(false);
 
   if (!items.length) {
     return (
@@ -47,22 +52,36 @@ export function CartPage() {
 
     setIsSubmitting(true);
     try {
-      const response = await orderService.checkout({
-        userId,
-        paymentMethod,
-        shippingAddress,
-        shippingMethod: "Envío Estándar Disc Market",
-      });
+      if (paymentMethod === "credit_card" || paymentMethod === "stripe") {
+        // Flujo oficial con Stripe: Creamos la intención de pago
+        const intent = await paymentService.createIntent({
+          userId,
+          shippingAddress,
+          shippingMethod: "Envío Estándar Disc Market",
+        });
 
-      await clear();
-      push("¡Compra realizada con éxito!");
-      navigate("/pedido/ok", {
-        state: {
-          orderId: response.order_id,
-          trackingNumber: response.tracking_number,
-          totalAmount: response.total_amount,
-        },
-      });
+        setStripeClientSecret(intent.clientSecret);
+        setStripeAmount(intent.amount);
+        setIsStripeModalOpen(true);
+      } else {
+        // Flujo alternativo para otros métodos
+        const response = await orderService.checkout({
+          userId,
+          paymentMethod,
+          shippingAddress,
+          shippingMethod: "Envío Estándar Disc Market",
+        });
+
+        await clear();
+        push("¡Compra realizada con éxito!");
+        navigate("/pedido/ok", {
+          state: {
+            orderId: response.order_id,
+            trackingNumber: response.tracking_number,
+            totalAmount: response.total_amount,
+          },
+        });
+      }
     } catch (err: any) {
       console.error("Error al procesar checkout:", err);
       push(err.message || "Ocurrió un error al procesar tu compra");
@@ -70,6 +89,23 @@ export function CartPage() {
       setIsSubmitting(false);
     }
   }
+
+  const handleStripeSuccess = async (orderData: {
+    orderId: number;
+    trackingNumber: string;
+    totalAmount: number;
+  }) => {
+    setIsStripeModalOpen(false);
+    await clear();
+    push("¡Pago procesado exitosamente con Stripe!");
+    navigate("/pedido/ok", {
+      state: {
+        orderId: orderData.orderId,
+        trackingNumber: orderData.trackingNumber,
+        totalAmount: orderData.totalAmount,
+      },
+    });
+  };
 
   return (
     <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_340px]">
@@ -169,9 +205,9 @@ export function CartPage() {
                 onChange={(e) => setPaymentMethod(e.target.value)}
                 className="w-full rounded-xl border border-line bg-ink px-3 py-2 text-xs text-foreground focus:outline-none focus:border-accent"
               >
-                <option value="credit_card">Tarjeta de Crédito / Débito</option>
-                <option value="spei">Transferencia SPEI</option>
-                <option value="paypal">PayPal</option>
+                <option value="credit_card">💳 Tarjeta (Crédito / Débito) vía Stripe</option>
+                <option value="spei">🏦 Transferencia SPEI (Simulación)</option>
+                <option value="paypal">🅿️ PayPal (Simulación)</option>
               </select>
             </div>
           </div>
@@ -192,12 +228,26 @@ export function CartPage() {
           onClick={handleCheckout}
           disabled={isSubmitting}
         >
-          {isSubmitting ? "Procesando pedido..." : "Confirmar y pagar"}
+          {isSubmitting
+            ? "Conectando con pasarela..."
+            : paymentMethod === "credit_card"
+            ? "Pagar con Stripe"
+            : "Confirmar pedido"}
         </Button>
         <p className="text-center text-xs text-muted">
-          Transacción simulada conectada a la base de datos PostgreSQL.
+          {paymentMethod === "credit_card"
+            ? "🔒 Pago encriptado procesado directamente por Stripe."
+            : "Transacción simulada conectada a la base de datos PostgreSQL."}
         </p>
       </aside>
+
+      <StripeCheckoutModal
+        isOpen={isStripeModalOpen}
+        onClose={() => setIsStripeModalOpen(false)}
+        clientSecret={stripeClientSecret || ""}
+        amount={stripeAmount || total}
+        onSuccess={handleStripeSuccess}
+      />
     </div>
   );
 }
