@@ -15,6 +15,7 @@ export type User = {
   name: string;
   email: string;
   role?: string;
+  avatar_url?: string | null;
 };
 
 export type AuthContextValue = {
@@ -23,6 +24,7 @@ export type AuthContextValue = {
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
   logout: () => void;
+  updateUser: (updatedData: Partial<User>) => void;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -105,6 +107,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         authService.logout();
         localStorage.removeItem(STORAGE_USER_KEY);
         setUser(null);
+      },
+      updateUser: (updatedData: Partial<User>) => {
+        setUser((prev) => {
+          if (!prev) return null;
+          const next = { ...prev, ...updatedData };
+          localStorage.setItem(STORAGE_USER_KEY, JSON.stringify(next));
+          return next;
+        });
       },
     }),
     [user, loading]

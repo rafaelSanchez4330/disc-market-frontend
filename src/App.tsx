@@ -10,6 +10,7 @@ import { CatalogPage } from "./features/catalog/CatalogPage";
 import { CreatePage } from "./features/custom/CreatePage";
 import { HomePage } from "./features/home/HomePage";
 import { ProductPage } from "./features/product/ProductPage";
+import { ProfilePage } from "./features/profile/ProfilePage";
 
 export function App() {
   return (
@@ -27,6 +28,7 @@ export function App() {
                 <Route path="/crear" element={<CreatePage />} />
                 <Route path="/carrito" element={<CartPage />} />
                 <Route path="/pedido/ok" element={<OrderOkPage />} />
+                <Route path="/perfil" element={<ProfilePage />} />
                 <Route path="/iniciar-sesion" element={<LoginPage />} />
                 <Route path="/registro" element={<RegisterPage />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
