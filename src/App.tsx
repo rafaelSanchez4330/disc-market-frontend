@@ -5,6 +5,8 @@ import { CartProvider } from "./context/CartContext";
 import { ToastProvider } from "./context/ToastContext";
 import { LoginPage } from "./features/auth/LoginPage";
 import { RegisterPage } from "./features/auth/RegisterPage";
+import { ForgotPasswordPage } from "./features/auth/ForgotPasswordPage";
+import { ResetPasswordPage } from "./features/auth/ResetPasswordPage";
 import { CartPage, OrderOkPage } from "./features/cart/CartPage";
 import { CatalogPage } from "./features/catalog/CatalogPage";
 import { CreatePage } from "./features/custom/CreatePage";
@@ -31,6 +33,8 @@ export function App() {
                 <Route path="/perfil" element={<ProfilePage />} />
                 <Route path="/iniciar-sesion" element={<LoginPage />} />
                 <Route path="/registro" element={<RegisterPage />} />
+                <Route path="/olvide-contrasena" element={<ForgotPasswordPage />} />
+                <Route path="/recuperar-contrasena" element={<ResetPasswordPage />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Route>
             </Routes>

@@ -7,6 +7,7 @@ import {
   type ReactNode,
 } from "react";
 import { authService } from "../shared/api/services/authService";
+import { authRecoveryService } from "../shared/api/services/authRecoveryService";
 import { tokenStorage } from "../shared/api/apiClient";
 
 export type User = {
@@ -22,6 +23,7 @@ export type AuthContextValue = {
   user: User | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
+  loginWithOtp: (email: string, code: string) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
   logout: () => void;
   updateUser: (updatedData: Partial<User>) => void;
@@ -81,6 +83,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       loading,
       login: async (email: string, password: string) => {
         const response = await authService.login({ email, password });
+        const loggedUser: User = {
+          user_id: response.user.user_id,
+          userId: response.user.user_id,
+          name: response.user.name,
+          email: response.user.email,
+          role: response.user.role,
+        };
+        setUser(loggedUser);
+        localStorage.setItem(STORAGE_USER_KEY, JSON.stringify(loggedUser));
+      },
+      loginWithOtp: async (email: string, code: string) => {
+        const response = await authRecoveryService.verifyOtp({ email, code });
         const loggedUser: User = {
           user_id: response.user.user_id,
           userId: response.user.user_id,
