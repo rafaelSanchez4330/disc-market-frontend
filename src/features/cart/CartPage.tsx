@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useCart } from "../../context/CartContext";
@@ -6,6 +6,7 @@ import { useToast } from "../../context/ToastContext";
 import { formatLabel, formatPrice } from "../../data/products";
 import { orderService } from "../../shared/api/services/orderService";
 import { paymentService } from "../../shared/api/services/paymentService";
+import { userService } from "../../shared/api/services/userService";
 import { StripeCheckoutModal } from "./components/StripeCheckoutModal";
 import { AlbumCover } from "../../shared/ui/AlbumCover";
 import { Button } from "../../shared/ui/Button";
@@ -21,6 +22,34 @@ export function CartPage() {
   const [shippingAddress, setShippingAddress] = useState(
     "Av. Insurgentes Sur 1450, Col. Actipan, CDMX"
   );
+
+  useEffect(() => {
+    if (user) {
+      userService
+        .getProfile()
+        .then((profile) => {
+          const pref = profile.preferences;
+          if (pref && pref.default_address_line1) {
+            const formatted = [
+              pref.default_address_line1,
+              pref.default_address_line2,
+              pref.default_city,
+              pref.default_state,
+              pref.default_postal_code,
+              pref.default_country,
+            ]
+              .filter(Boolean)
+              .join(", ");
+            if (formatted) {
+              setShippingAddress(formatted);
+            }
+          }
+        })
+        .catch(() => {
+          // Si falla, se conserva la dirección por defecto
+        });
+    }
+  }, [user]);
   const [paymentMethod, setPaymentMethod] = useState("credit_card");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [stripeClientSecret, setStripeClientSecret] = useState<string | null>(null);

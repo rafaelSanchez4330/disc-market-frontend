@@ -51,9 +51,25 @@ export function Navbar() {
             ) : null}
           </Link>
           {user ? (
-            <button type="button" onClick={logout} className="hidden text-sm text-muted hover:text-cream sm:inline">
-              {user.name} · salir
-            </button>
+            <div className="hidden items-center gap-2 sm:flex">
+              <Link
+                to="/perfil"
+                className="flex items-center gap-2 rounded-full border border-line bg-card px-3 py-1 text-sm text-cream transition hover:border-accent hover:text-accent"
+              >
+                <span className="grid h-5 w-5 place-items-center rounded-full bg-accent/20 text-xs">
+                  {user.avatar_url && !user.avatar_url.startsWith("http") ? user.avatar_url : "👤"}
+                </span>
+                <span className="max-w-[110px] truncate font-medium">{user.name}</span>
+              </Link>
+              <button
+                type="button"
+                onClick={logout}
+                className="text-xs text-muted transition hover:text-vinyl cursor-pointer"
+                title="Cerrar sesión"
+              >
+                Salir
+              </button>
+            </div>
           ) : (
             <Link to="/iniciar-sesion" className="hidden text-sm text-muted hover:text-cream sm:inline">
               Iniciar sesión
@@ -78,9 +94,26 @@ export function Navbar() {
             </NavLink>
           ))}
           {user ? (
-            <button type="button" onClick={logout} className="text-left text-muted">
-              Cerrar sesión
-            </button>
+            <>
+              <NavLink
+                to="/perfil"
+                onClick={() => setOpen(false)}
+                className="flex items-center gap-2 text-accent font-medium"
+              >
+                <span>👤</span>
+                <span>Mi Perfil ({user.name})</span>
+              </NavLink>
+              <button
+                type="button"
+                onClick={() => {
+                  setOpen(false);
+                  logout();
+                }}
+                className="text-left text-muted hover:text-vinyl"
+              >
+                Cerrar sesión
+              </button>
+            </>
           ) : (
             <Link to="/iniciar-sesion" onClick={() => setOpen(false)}>
               Iniciar sesión
