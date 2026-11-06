@@ -239,10 +239,12 @@ A continuación se detallan los errores, inconsistencias y vulnerabilidades iden
   * Inyección estricta de `req.user.user_id` desde el token verificado y eliminación total de fallbacks arbitrarios (`userRepo.findOne()`).
   * Validación de propiedad de órdenes y carritos (o permiso de administrador).
 
-### 5.2. Desfase de Precios Hardcodeados en Creación Personalizada
-* **Diagnóstico:** En `customProduct.controller.ts` y en `CreatePage.tsx`, el precio base del disco personalizado está fijado con valores en código (`Vinyl = $799.00`, `CD = $99.00`). Si el administrador altera los precios en la base de datos, el cálculo del checkout queda inconsistente.
-* **Solución:**
-  * Crear un endpoint de configuración o tarifas base `GET /api/custom-products/pricing` que consulte directamente los precios vigentes desde la tabla de productos o configuración del sistema.
+### 5.2. Desfase de Precios Hardcodeados en Creación Personalizada ✅ (Completado)
+* **Diagnóstico:** En `customProduct.controller.ts` y en `CreatePage.tsx`, el precio base del disco personalizado estaba fijado con valores en código (`Vinyl = $799.00`, `CD = $99.00`). Si el administrador alteraba los precios en la base de datos, el cálculo del checkout quedaba inconsistente.
+* **Solución Implementada:**
+  * Creado endpoint `GET /api/custom-products/pricing` que consulta los precios base vigentes desde la tabla `products` en PostgreSQL.
+  * El controlador `createCustomProduct` resuelve de forma autoritativa el precio oficial en el backend evitando cualquier manipulación desde el cliente.
+  * En frontend, [`customProductService.ts`](./src/shared/api/services/customProductService.ts) y [`CreatePage.tsx`](./src/features/custom/CreatePage.tsx) consumen dinámicamente este endpoint al montar la vista y al seleccionar formato.
 
 ### 5.3. Limpieza de Archivos Huérfanos en Multer ante Errores de Base de Datos ✅ (Completado)
 * **Diagnóstico:** Cuando un usuario sube una portada (`uploadCover`) o pistas (`uploadTracks`) y la inserción subsiguiente en PostgreSQL falla por error de clave foránea o validación, los archivos ya fueron guardados en el disco en `uploads/covers/` o `uploads/tracks/`, generando acumulación de basura y consumo innecesario de almacenamiento.
@@ -250,10 +252,12 @@ A continuación se detallan los errores, inconsistencias y vulnerabilidades iden
   * Creado módulo de limpieza [`fileCleanup.ts`](../disc-market-backend/src/utils/fileCleanup.ts) con `safelyDeleteFile` y `safelyDeleteFiles`.
   * Integrado rollback automático en bloques `try/catch` y caminos de error de `createCustomProduct` y `addTracksToCustomProduct`.
 
-### 5.4. Sincronización del Carrito Dual (Local vs. Servidor)
-* **Diagnóstico:** En `CartContext.tsx`, si la llamada al backend falla por problemas de conexión intermitente, el estado local no reintenta sincronizarse al volver la conexión, provocando discrepancias entre lo que el usuario ve en pantalla y lo que Stripe cobra (ya que Stripe valida el carrito de la base de datos).
-* **Solución:**
-  * Implementar una cola de sincronización con reintento automático y un banner visual en el carrito advirtiendo si hay cambios locales pendientes de sincronizar con el servidor.
+### 5.4. Sincronización del Carrito Dual (Local vs. Servidor) ✅ (Completado)
+* **Diagnóstico:** En `CartContext.tsx`, si la llamada al backend fallaba por problemas de conexión intermitente, el estado local no reintentaba sincronizarse al volver la conexión, provocando discrepancias entre lo que el usuario ve en pantalla y lo que Stripe cobra (ya que Stripe valida el carrito de la base de datos).
+* **Solución Implementada:**
+  * Implementada cola de sincronización con reintentos automáticos al dispararse el evento `'online'` y reintento en segundo plano cada 15 segundos si hay ítems pendientes o error de red.
+  * Incorporado estado `isPendingSync`, `syncError` y función `retrySync` en [`CartContext.tsx`](./src/context/CartContext.tsx).
+  * Añadido banner visual de advertencia interactivo en [`CartPage.tsx`](./src/features/cart/CartPage.tsx) con botón "Sincronizar ahora" y bloqueo de checkout preventivo hasta consolidar el carrito con el backend.
 
 ### 5.5. Manejo del Pool de Conexiones de PostgreSQL (TypeORM) ✅ (Completado)
 * **Diagnóstico:** La inicialización de `AppDataSource` no contaba con política de reintentos exponenciales en caso de que el contenedor de PostgreSQL tarde en estar disponible tras reiniciar `docker-compose`.

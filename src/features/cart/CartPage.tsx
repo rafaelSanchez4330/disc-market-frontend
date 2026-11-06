@@ -14,7 +14,17 @@ import { EmptyState } from "../../shared/ui/EmptyState";
 import { Price } from "../../shared/ui/Price";
 
 export function CartPage() {
-  const { items, total, updateQuantity, removeItem, clear } = useCart();
+  const {
+    items,
+    total,
+    loading,
+    isPendingSync,
+    syncError,
+    retrySync,
+    updateQuantity,
+    removeItem,
+    clear,
+  } = useCart();
   const { user } = useAuth();
   const { push } = useToast();
   const navigate = useNavigate();
@@ -79,6 +89,17 @@ export function CartPage() {
       return;
     }
 
+    // Si existen cambios locales sin persistir, sincronizar con el backend antes de cobrar
+    if (isPendingSync) {
+      push("Sincronizando los cambios del carrito con el servidor...");
+      try {
+        await retrySync();
+      } catch {
+        push("No se pudo sincronizar el carrito con la base de datos. Revisa tu conexión.");
+        return;
+      }
+    }
+
     setIsSubmitting(true);
     try {
       if (paymentMethod === "credit_card" || paymentMethod === "stripe") {
@@ -140,6 +161,33 @@ export function CartPage() {
     <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_340px]">
       <section className="space-y-4">
         <h1 className="font-display text-4xl">Carrito</h1>
+
+        {user && (isPendingSync || syncError) && (
+          <div className="rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4 text-amber-200 shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div className="flex items-start sm:items-center gap-3">
+                <span className="text-xl">⚠️</span>
+                <div>
+                  <p className="font-semibold text-sm">Cambios pendientes de sincronizar</p>
+                  <p className="text-xs text-amber-300/80">
+                    {syncError ||
+                      "Hay modificaciones en tu carrito local pendientes de confirmarse en la base de datos."}
+                  </p>
+                </div>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={retrySync}
+                disabled={loading}
+                className="border-amber-400/50 text-amber-300 hover:bg-amber-500/20 text-xs px-3 py-1.5 self-start sm:self-auto shrink-0"
+              >
+                {loading ? "Sincronizando..." : "Sincronizar ahora"}
+              </Button>
+            </div>
+          </div>
+        )}
+
         {items.map((item) => (
           <article
             key={item.id}
@@ -255,10 +303,12 @@ export function CartPage() {
         <Button
           className="w-full mt-2"
           onClick={handleCheckout}
-          disabled={isSubmitting}
+          disabled={isSubmitting || (Boolean(user) && isPendingSync && loading)}
         >
           {isSubmitting
             ? "Conectando con pasarela..."
+            : Boolean(user) && isPendingSync && loading
+            ? "Sincronizando carrito..."
             : paymentMethod === "credit_card"
             ? "Pagar con Stripe"
             : "Confirmar pedido"}

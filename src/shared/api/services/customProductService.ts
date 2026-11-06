@@ -11,7 +11,26 @@ export interface CreateCustomProductDto {
   tracks?: Array<{ name: string; order: number }>;
 }
 
+export interface CustomPricingItem {
+  format: "CD" | "VINYL";
+  name: string;
+  base_price: number;
+  description: string;
+}
+
+export interface CustomPricingResponse {
+  CD: CustomPricingItem;
+  VINYL: CustomPricingItem;
+}
+
 export const customProductService = {
+  /**
+   * Consulta las tarifas base vigentes desde el backend.
+   */
+  getPricing: async (): Promise<CustomPricingResponse> => {
+    return apiClient.get<CustomPricingResponse>("/custom-products/pricing");
+  },
+
   /**
    * Crea un nuevo disco personalizado enviando carátula (FormData) y metadatos de pistas al backend.
    */
