@@ -47,6 +47,11 @@ export interface BackendCustomTrack {
   file_path: string;
   track_order: number;
   duration: number;
+  copyright_status?: "VERIFIED" | "PENDING" | "FLAGGED";
+  copyright_match_title?: string | null;
+  copyright_match_artist?: string | null;
+  file_size_bytes?: number | null;
+  audio_fingerprint?: string | null;
 }
 
 export interface BackendCustomProduct {
@@ -59,6 +64,11 @@ export interface BackendCustomProduct {
   packaging_option?: string | null;
   price: string | number;
   created_at?: string;
+  total_duration?: number;
+  copyright_disclaimer_accepted?: boolean;
+  copyright_disclaimer_timestamp?: string | null;
+  copyright_disclaimer_ip?: string | null;
+  copyright_disclaimer_hash?: string | null;
   custom_tracks?: BackendCustomTrack[];
 }
 

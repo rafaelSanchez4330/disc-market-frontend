@@ -138,13 +138,25 @@ CREATE TABLE user_preferences (
 
 ---
 
-## 🎵 Módulo 3: Subida de Audios y Validación de Copyright
+## 🎵 Módulo 3: Subida de Audios y Validación de Copyright ✅ (Completado / Implementado)
+
+> **Estado:** ✅ **COMPLETADO (Noviembre 2026)**
+>
+> **Artefactos implementados:**
+> * **Backend:**
+>   * Entidades TypeORM: [`CustomTrack.ts`](../disc-market-backend/src/entities/CustomTrack.ts) (campos de estatus de copyright, matches, tamaño binario y huella acústica) y [`CustomProduct.ts`](../disc-market-backend/src/entities/CustomProduct.ts) (duración física total y campos de acta/declaración jurada con timestamp, IP y hash SHA-256).
+>   * Motor de Copyright: [`copyright.service.ts`](../disc-market-backend/src/services/copyright.service.ts) con escaneo acústico, cotejo de catálogo comercial protegido (Sony, Universal, Warner), cálculo de hash SHA-256 de fonogramas y validación de capacidades físicas (CD 80 min / 20 tracks, Vinilo 44 min / 12 tracks).
+>   * Controlador & Rutas: [`customProduct.controller.ts`](../disc-market-backend/src/controllers/customProduct.controller.ts) con endpoints `POST /api/custom-products/scan-track` (escaneo rápido con eliminación de temporales) y `POST /api/custom-products/:id/tracks` (procesamiento binario, validación de integridad, rollback en caso de rechazo y firma digital) y [`customProduct.routes.ts`](../disc-market-backend/src/routes/customProduct.routes.ts).
+>   * Middleware Multer & Magic Bytes: [`upload.middleware.ts`](../disc-market-backend/src/middlewares/upload.middleware.ts) con soporte para carga única y múltiple de archivos de audio, límites de 50MB (CD) y 75MB (Vinilo) y validación binaria de cabeceras.
+> * **Frontend:**
+>   * Servicios API: [`customProductService.ts`](./src/shared/api/services/customProductService.ts) con métodos `scanTrack` y `uploadTracks`, y contratos extendidos en [`types.ts`](./src/shared/api/types.ts).
+>   * Creador Físico Interactivo: [`CreatePage.tsx`](./src/features/custom/CreatePage.tsx) con zona Drag & Drop para archivos de audio (`.mp3, .wav, .flac, .m4a, .aac`), extracción de duración en tiempo real (`loadedmetadata`), previsualización y reproductor HTML5 integrado, medidor visual de capacidad física con semáforo de colores (verde/ámbar/rojo), badges dinámicos de verificación de copyright y cláusula legal obligatoria de declaración jurada con bloqueo de compra.
 
 ### 3.1. Contexto y Necesidad
-En el creador de discos personalizados (`/crear`), el paso 2 actualmente solo solicita texto para los nombres de las canciones. La funcionalidad completa requiere:
-1. Subida real de archivos de audio por parte del usuario.
-2. Validación de duración máxima según la capacidad física del medio.
-3. **Mecanismo de validación y control de derechos de autor (Copyright Compliance)** para evitar la fabricación y piratería de fonogramas protegidos comercialmente.
+En el creador de discos personalizados (`/crear`), el paso 2 solicitaba únicamente texto simple para los nombres de las canciones sin persistencia binaria ni validación de soporte. La funcionalidad completa implementada resuelve:
+1. Subida real y almacenamiento seguro de archivos de audio por parte del usuario (`uploads/tracks/`).
+2. Validación de duración máxima según la capacidad física del medio (80 min para CD, 44 min para Vinilo).
+3. **Mecanismo de validación y control de derechos de autor (Copyright Compliance)** con 3 capas de defensa para evitar la manufactura de fonogramas comerciales protegidos sin licencia.
 
 ### 3.2. Límites Físicos por Formato
 | Formato | Capacidad Máxima | Formatos Soportados | Límite por Archivo |
