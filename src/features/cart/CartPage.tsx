@@ -4,7 +4,6 @@ import { useAuth } from "../../context/AuthContext";
 import { useCart } from "../../context/CartContext";
 import { useToast } from "../../context/ToastContext";
 import { formatLabel, formatPrice } from "../../data/products";
-import { orderService } from "../../shared/api/services/orderService";
 import { paymentService } from "../../shared/api/services/paymentService";
 import { userService } from "../../shared/api/services/userService";
 import { StripeCheckoutModal } from "./components/StripeCheckoutModal";
@@ -23,7 +22,8 @@ export function CartPage() {
     retrySync,
     updateQuantity,
     removeItem,
-    clear,
+    refreshCart,
+    checkoutPending,
   } = useCart();
   const { user } = useAuth();
   const { push } = useToast();
@@ -60,11 +60,24 @@ export function CartPage() {
         });
     }
   }, [user]);
-  const [paymentMethod, setPaymentMethod] = useState("credit_card");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [stripeClientSecret, setStripeClientSecret] = useState<string | null>(null);
   const [stripeAmount, setStripeAmount] = useState<number>(0);
   const [isStripeModalOpen, setIsStripeModalOpen] = useState(false);
+  const [stripeIntentId, setStripeIntentId] = useState<string | undefined>();
+
+  async function cancelOpenPayment() {
+    setIsSubmitting(true);
+    try {
+      const result = await paymentService.cancel(stripeIntentId);
+      setIsStripeModalOpen(false); setStripeClientSecret(null); setStripeIntentId(undefined);
+      await refreshCart();
+      if (result.status === 'completed') {
+        navigate('/pedido/ok', { state: { orderId: result.order_id, totalAmount: result.total_amount, trackingNumber: result.tracking_number } });
+      } else push('Pago cancelado. Las unidades reservadas vuelven a estar disponibles.');
+    } catch (error) { push(error instanceof Error ? error.message : 'No se pudo cancelar el pago.'); }
+    finally { setIsSubmitting(false); }
+  }
 
   if (!items.length) {
     return (
@@ -94,44 +107,20 @@ export function CartPage() {
       push("Sincronizando los cambios del carrito con el servidor...");
       try {
         await retrySync();
-      } catch {
-        push("No se pudo sincronizar el carrito con la base de datos. Revisa tu conexión.");
+      } catch (error) {
+        push(error instanceof Error ? error.message : 'No se pudo sincronizar el carrito.');
         return;
       }
     }
 
     setIsSubmitting(true);
     try {
-      if (paymentMethod === "credit_card" || paymentMethod === "stripe") {
-        // Flujo oficial con Stripe: Creamos la intención de pago
-        const intent = await paymentService.createIntent({
-          userId,
-          shippingAddress,
-          shippingMethod: "Envío Estándar Disc Market",
-        });
-
-        setStripeClientSecret(intent.clientSecret);
-        setStripeAmount(intent.amount);
-        setIsStripeModalOpen(true);
-      } else {
-        // Flujo alternativo para otros métodos
-        const response = await orderService.checkout({
-          userId,
-          paymentMethod,
-          shippingAddress,
-          shippingMethod: "Envío Estándar Disc Market",
-        });
-
-        await clear();
-        push("¡Compra realizada con éxito!");
-        navigate("/pedido/ok", {
-          state: {
-            orderId: response.order_id,
-            trackingNumber: response.tracking_number,
-            totalAmount: response.total_amount,
-          },
-        });
-      }
+      const intent = await paymentService.createIntent({ userId, shippingAddress, shippingMethod: 'Envío Estándar Disc Market' });
+      setStripeClientSecret(intent.clientSecret);
+      setStripeIntentId(intent.paymentIntentId);
+      setStripeAmount(intent.amount);
+      setIsStripeModalOpen(true);
+      await refreshCart();
     } catch (err: any) {
       console.error("Error al procesar checkout:", err);
       push(err.message || "Ocurrió un error al procesar tu compra");
@@ -146,7 +135,7 @@ export function CartPage() {
     totalAmount: number;
   }) => {
     setIsStripeModalOpen(false);
-    await clear();
+    await refreshCart().catch(() => {});
     push("¡Pago procesado exitosamente con Stripe!");
     navigate("/pedido/ok", {
       state: {
@@ -161,6 +150,10 @@ export function CartPage() {
     <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_340px]">
       <section className="space-y-4">
         <h1 className="font-display text-4xl">Carrito</h1>
+        {checkoutPending && <div className="rounded-2xl border border-accent/40 p-4 text-sm">
+          <p>Hay un pago abierto. Puedes retomarlo con el botón de pago o cancelarlo para modificar el carrito.</p>
+          <button className="mt-2 text-accent underline disabled:opacity-50" disabled={isSubmitting} onClick={cancelOpenPayment}>Cancelar pago abierto</button>
+        </div>}
 
         {user && (isPendingSync || syncError) && (
           <div className="rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4 text-amber-200 shadow-sm">
@@ -177,8 +170,8 @@ export function CartPage() {
               </div>
               <Button
                 type="button"
-                variant="outline"
-                onClick={retrySync}
+                variant="ghost"
+                onClick={() => { void retrySync().catch(err => push(err.message)); }}
                 disabled={loading}
                 className="border-amber-400/50 text-amber-300 hover:bg-amber-500/20 text-xs px-3 py-1.5 self-start sm:self-auto shrink-0"
               >
@@ -221,7 +214,8 @@ export function CartPage() {
                       min={1}
                       max={10}
                       value={item.quantity}
-                      onChange={(e) => updateQuantity(item.id, Number(e.target.value))}
+                      disabled={checkoutPending || loading}
+                      onChange={(e) => { void updateQuantity(item.id, Number(e.target.value)).catch(err => push(err.message)); }}
                       className="ml-2 w-16 rounded-lg border border-line bg-ink px-2 py-1 text-center"
                     />
                   </label>
@@ -231,7 +225,8 @@ export function CartPage() {
             </div>
             <button
               type="button"
-              onClick={() => removeItem(item.id)}
+              disabled={checkoutPending || loading}
+              onClick={() => { void removeItem(item.id).catch(err => push(err.message)); }}
               className="self-start text-sm text-muted hover:text-vinyl transition-colors cursor-pointer"
             >
               Quitar
@@ -277,15 +272,7 @@ export function CartPage() {
               <label className="text-xs font-semibold text-muted block mb-1">
                 Método de pago
               </label>
-              <select
-                value={paymentMethod}
-                onChange={(e) => setPaymentMethod(e.target.value)}
-                className="w-full rounded-xl border border-line bg-ink px-3 py-2 text-xs text-foreground focus:outline-none focus:border-accent"
-              >
-                <option value="credit_card">💳 Tarjeta (Crédito / Débito) vía Stripe</option>
-                <option value="spei">🏦 Transferencia SPEI (Simulación)</option>
-                <option value="paypal">🅿️ PayPal (Simulación)</option>
-              </select>
+              <p className="text-sm">Tarjeta y métodos compatibles mediante Stripe</p>
             </div>
           </div>
         ) : (
@@ -303,26 +290,22 @@ export function CartPage() {
         <Button
           className="w-full mt-2"
           onClick={handleCheckout}
-          disabled={isSubmitting || (Boolean(user) && isPendingSync && loading)}
+          disabled={isSubmitting || loading}
         >
           {isSubmitting
             ? "Conectando con pasarela..."
             : Boolean(user) && isPendingSync && loading
             ? "Sincronizando carrito..."
-            : paymentMethod === "credit_card"
-            ? "Pagar con Stripe"
-            : "Confirmar pedido"}
+            : "Pagar con Stripe"}
         </Button>
         <p className="text-center text-xs text-muted">
-          {paymentMethod === "credit_card"
-            ? "🔒 Pago encriptado procesado directamente por Stripe."
-            : "Transacción simulada conectada a la base de datos PostgreSQL."}
+          Las unidades se reservan durante 15 minutos al iniciar el pago.
         </p>
       </aside>
 
       <StripeCheckoutModal
         isOpen={isStripeModalOpen}
-        onClose={() => setIsStripeModalOpen(false)}
+        onClose={() => { void cancelOpenPayment(); }}
         clientSecret={stripeClientSecret || ""}
         amount={stripeAmount || total}
         onSuccess={handleStripeSuccess}

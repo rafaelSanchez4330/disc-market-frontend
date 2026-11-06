@@ -84,6 +84,8 @@ export interface BackendCartItem {
 }
 
 export interface BackendShoppingCart {
+  checkout_pending?: boolean;
+  reservation_expires_at?: string | null;
   cart_id: number;
   user_id: number;
   status: string;

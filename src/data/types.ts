@@ -29,6 +29,7 @@ export type Product = {
   productType: ProductType;
   isCustomizable: boolean;
   availabilityStatus: Availability;
+  stock?: number;
   cover: CoverTheme;
   imageUrl?: string | null;
   tracks: ProductTrack[];
