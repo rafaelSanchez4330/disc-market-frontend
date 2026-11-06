@@ -39,6 +39,7 @@ export function Navbar() {
         </nav>
 
         <div className="flex items-center gap-3">
+          {user?.role === "admin" && <Link to="/admin" className="hidden rounded-full border border-accent/60 px-3 py-1.5 text-sm text-accent sm:inline-flex">Administración</Link>}
           <Link
             to="/carrito"
             className="relative rounded-full border border-line px-3 py-1.5 text-sm hover:border-accent"
@@ -95,6 +96,7 @@ export function Navbar() {
           ))}
           {user ? (
             <>
+              {user.role === "admin" && <NavLink to="/admin" onClick={() => setOpen(false)} className="font-medium text-accent">Administración</NavLink>}
               <NavLink
                 to="/perfil"
                 onClick={() => setOpen(false)}

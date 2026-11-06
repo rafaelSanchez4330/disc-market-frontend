@@ -67,18 +67,15 @@ export function ProductPage() {
   const selected = product;
   const soldOut = selected.availabilityStatus === "OUT_OF_STOCK";
 
-  function addToCart() {
-    addItem({
-      productId: selected.productId,
-      name: selected.name,
-      artist: selected.artist,
-      format: selected.format,
-      unitPrice: selected.price,
-      cover: selected.cover,
-      imageUrl: selected.imageUrl,
-      quantity,
-    });
-    push("Agregado al carrito");
+  async function addToCart() {
+    try {
+      await addItem({
+        productId: selected.productId, name: selected.name, artist: selected.artist,
+        format: selected.format, unitPrice: selected.price, cover: selected.cover,
+        imageUrl: selected.imageUrl, quantity,
+      });
+      push("Agregado al carrito");
+    } catch (error) { push(error instanceof Error ? error.message : 'No se pudo añadir el producto.'); }
   }
 
   return (
@@ -115,13 +112,13 @@ export function ProductPage() {
               <input
                 type="number"
                 min={1}
-                max={10}
+                max={selected.stock ?? 1}
                 value={quantity}
                 onChange={(e) => setQuantity(Number(e.target.value))}
                 className="w-14 bg-transparent text-center outline-none"
               />
             </label>
-            <Button onClick={addToCart} disabled={soldOut}>
+            <Button onClick={addToCart} disabled={soldOut || !Number.isSafeInteger(quantity) || quantity < 1 || quantity > (selected.stock ?? 1)}>
               Agregar al carrito
             </Button>
           </div>

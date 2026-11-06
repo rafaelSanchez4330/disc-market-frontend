@@ -1,5 +1,9 @@
 # Disc Market - Frontend
 
+[Arrancar y validar el panel de administración](https://github.com/rafaelSanchez4330/disc-market-backend/blob/yazmin/docs/ADMIN.md).
+
+[Architecture, service interactions, and database relationships](https://github.com/rafaelSanchez4330/disc-market-backend/blob/yazmin/docs/ARCHITECTURE.md).
+
 [Preguntas y respuestas para estudiar](docs/GUIA-ESTUDIO.md).
 
 Guía del sitio publicado en https://vinylhrz.tech: [docs/DESPLIEGUE.md](docs/DESPLIEGUE.md).
@@ -8,6 +12,9 @@ Guía del sitio publicado en https://vinylhrz.tech: [docs/DESPLIEGUE.md](docs/DE
 Cliente web de **Disc Market**. UI en español.
 
 Cliente web de **Disc Market**, plataforma de comercio electrónico para la venta y personalización de música en formatos físicos (**CDs** y **Vinilos**).
+- Stack: React + TypeScript + Vite + Tailwind
+- Interfaz conectada a la API para catálogo, autenticación, carrito, personalización y pagos con Stripe
+- Plan del producto: [`disc-market-backend/docs/PLAN.md`](../disc-market-backend/docs/PLAN.md)
 
 
 ---
