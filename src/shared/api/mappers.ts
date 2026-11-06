@@ -60,7 +60,7 @@ export function normalizeFormat(rawFormat: string | undefined): Format {
  * Mapea un producto del backend a la estructura que utiliza la interfaz.
  */
 export function mapBackendProduct(p: BackendProduct): Product {
-  const stock = p.inventory?.quantity_available ?? 10;
+  const stock = p.inventory?.quantity_available ?? 0;
   let availabilityStatus: Availability = "AVAILABLE";
   if (stock <= 0) {
     availabilityStatus = "OUT_OF_STOCK";
@@ -84,6 +84,7 @@ export function mapBackendProduct(p: BackendProduct): Product {
     productType: "REGULAR",
     isCustomizable: false,
     availabilityStatus,
+    stock,
     cover,
     imageUrl,
     tracks: [],

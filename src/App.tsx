@@ -13,6 +13,7 @@ import { CreatePage } from "./features/custom/CreatePage";
 import { HomePage } from "./features/home/HomePage";
 import { ProductPage } from "./features/product/ProductPage";
 import { ProfilePage } from "./features/profile/ProfilePage";
+import { AdminPage } from "./features/admin/AdminPage";
 
 export function App() {
   return (
@@ -31,6 +32,7 @@ export function App() {
                 <Route path="/carrito" element={<CartPage />} />
                 <Route path="/pedido/ok" element={<OrderOkPage />} />
                 <Route path="/perfil" element={<ProfilePage />} />
+                <Route path="/admin" element={<AdminPage />} />
                 <Route path="/iniciar-sesion" element={<LoginPage />} />
                 <Route path="/registro" element={<RegisterPage />} />
                 <Route path="/olvide-contrasena" element={<ForgotPasswordPage />} />

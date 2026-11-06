@@ -40,4 +40,6 @@ export const paymentService = {
       paymentIntentId,
     });
   },
+  cancel: (paymentIntentId?: string) => apiClient.post<{ status: 'canceled' | 'completed'; order_id?: number; total_amount?: number; tracking_number?: string }>(
+    '/payments/cancel', paymentIntentId ? { paymentIntentId } : {}),
 };

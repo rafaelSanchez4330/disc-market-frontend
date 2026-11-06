@@ -93,7 +93,7 @@ export function CreatePage() {
       const serverImageUrl = resolveAssetUrl(created.cover_image);
 
       // 2. Agregar ítem al carrito de la aplicación con la URL real del archivo
-      addItem({
+      await addItem({
         customId: `custom-${created.custom_product_id}`,
         customProductId: created.custom_product_id,
         productId: template.productId,
@@ -111,23 +111,7 @@ export function CreatePage() {
       push("¡Disco personalizado creado y guardado en la base de datos!");
       navigate("/carrito");
     } catch (err: any) {
-      console.warn("Error al guardar en backend, usando fallback local:", err);
-      // Fallback local en caso de error de red
-      addItem({
-        customId: `custom-${Date.now()}`,
-        productId: template.productId,
-        name: draft.title || template.name,
-        artist: "Tu edición",
-        format: draft.format,
-        unitPrice: currentPrice,
-        cover: template.cover,
-        imageUrl: previewUrl,
-        customSummary: `${draft.tracks.length} pistas · ${packagingLabel[draft.packaging]}${
-          draft.coverName ? ` · ${draft.coverName}` : ""
-        }`,
-      });
-      push("Agregado al carrito localmente");
-      navigate("/carrito");
+      push(err.message || 'No se pudo agregar el disco personalizado. Revisa las existencias y vuelve a intentar.');
     } finally {
       setSubmitting(false);
     }
