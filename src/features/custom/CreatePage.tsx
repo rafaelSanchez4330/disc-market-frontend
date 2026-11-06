@@ -356,8 +356,9 @@ export function CreatePage() {
         unitPrice: currentPrice,
         cover: template.cover,
         imageUrl: serverImageUrl || previewUrl,
-        customSummary: `${draft.tracks.length} pistas (${formatDuration(totalDuration)}) · ${packagingLabel[draft.packaging]
-          }${draft.coverName ? ` · ${draft.coverName}` : ""}`,
+        customSummary: `${draft.tracks.length} pistas (${formatDuration(totalDuration)}) · ${
+          packagingLabel[draft.packaging]
+        }${draft.coverName ? ` · ${draft.coverName}` : ""}`,
       });
 
       push("¡Disco personalizado creado, audios validados y guardado en la orden!");
@@ -374,8 +375,9 @@ export function CreatePage() {
         unitPrice: currentPrice,
         cover: template.cover,
         imageUrl: previewUrl,
-        customSummary: `${draft.tracks.length} pistas (${formatDuration(totalDuration)}) · ${packagingLabel[draft.packaging]
-          }${draft.coverName ? ` · ${draft.coverName}` : ""}`,
+        customSummary: `${draft.tracks.length} pistas (${formatDuration(totalDuration)}) · ${
+          packagingLabel[draft.packaging]
+        }${draft.coverName ? ` · ${draft.coverName}` : ""}`,
       });
       push("Agregado al carrito localmente");
       navigate("/carrito");
@@ -395,8 +397,9 @@ export function CreatePage() {
         {steps.map((label, index) => (
           <li
             key={label}
-            className={`rounded-full border px-3 py-2 text-center ${index === step ? "border-accent text-accent" : "border-line text-muted"
-              }`}
+            className={`rounded-full border px-3 py-2 text-center ${
+              index === step ? "border-accent text-accent" : "border-line text-muted"
+            }`}
           >
             {index + 1}. {label}
           </li>
@@ -415,8 +418,9 @@ export function CreatePage() {
                   key={item.productId}
                   type="button"
                   onClick={() => setDraft((d) => ({ ...d, format: item.format }))}
-                  className={`rounded-2xl border p-5 text-left transition ${draft.format === item.format ? "border-accent" : "border-line hover:border-accent/50"
-                    }`}
+                  className={`rounded-2xl border p-5 text-left transition ${
+                    draft.format === item.format ? "border-accent" : "border-line hover:border-accent/50"
+                  }`}
                 >
                   <p className="font-display text-2xl">{formatLabel[item.format]}</p>
                   <p className="mt-2 text-muted">{displayDesc}</p>
@@ -625,14 +629,14 @@ export function CreatePage() {
               {submitting
                 ? "Procesando audios y orden..."
                 : isOverCapacity
-                  ? "Capacidad física excedida"
-                  : hasFlaggedTracks
-                    ? "Conflicto de copyright"
-                    : isAnalyzingTracks
-                      ? "Analizando pistas..."
-                      : !draft.disclaimerAccepted
-                        ? "Acepta la declaración jurada"
-                        : "Agregar al carrito"}
+                ? "Capacidad física excedida"
+                : hasFlaggedTracks
+                ? "Conflicto de copyright"
+                : isAnalyzingTracks
+                ? "Analizando pistas..."
+                : !draft.disclaimerAccepted
+                ? "Acepta la declaración jurada"
+                : "Agregar al carrito"}
             </Button>
           )}
         </div>
@@ -772,12 +776,13 @@ function TrackStep({
         {/* Barra de progreso */}
         <div className="h-2.5 w-full overflow-hidden rounded-full bg-card">
           <div
-            className={`h-full transition-all duration-300 ${totalDuration > formatLimit.maxDuration
+            className={`h-full transition-all duration-300 ${
+              totalDuration > formatLimit.maxDuration
                 ? "bg-vinyl"
                 : durationPercent > 80
-                  ? "bg-accent"
-                  : "bg-ok"
-              }`}
+                ? "bg-accent"
+                : "bg-ok"
+            }`}
             style={{ width: `${Math.min(100, (totalDuration / formatLimit.maxDuration) * 100)}%` }}
           />
         </div>
@@ -818,10 +823,11 @@ function TrackStep({
         onDragLeave={() => setIsDragging(false)}
         onDrop={handleDrop}
         onClick={() => fileInputRef.current?.click()}
-        className={`group relative flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed p-8 text-center transition ${isDragging
+        className={`group relative flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed p-8 text-center transition ${
+          isDragging
             ? "border-accent bg-accent/10"
             : "border-line bg-ink/50 hover:border-accent/60 hover:bg-ink"
-          }`}
+        }`}
       >
         <input
           ref={fileInputRef}
@@ -887,10 +893,11 @@ function TrackStep({
               return (
                 <li
                   key={`${track.order}-${track.name}`}
-                  className={`flex flex-col gap-3 rounded-2xl border p-4 transition ${track.copyrightStatus === "FLAGGED"
+                  className={`flex flex-col gap-3 rounded-2xl border p-4 transition ${
+                    track.copyrightStatus === "FLAGGED"
                       ? "border-vinyl/60 bg-vinyl/5"
                       : "border-line bg-ink"
-                    }`}
+                  }`}
                 >
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
@@ -936,10 +943,11 @@ function TrackStep({
                         <button
                           type="button"
                           onClick={() => togglePlayAudio(track)}
-                          className={`flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-medium transition ${isPlaying
+                          className={`flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-medium transition ${
+                            isPlaying
                               ? "bg-accent text-ink font-semibold"
                               : "bg-card text-cream hover:bg-line"
-                            }`}
+                          }`}
                           title={isPlaying ? "Pausar vista previa" : "Escuchar vista previa"}
                         >
                           {isPlaying ? "⏸ Pausar" : "▶ Escuchar"}
