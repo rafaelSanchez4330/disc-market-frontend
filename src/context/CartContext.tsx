@@ -17,6 +17,9 @@ type CartContextValue = {
   count: number;
   total: number;
   loading: boolean;
+  isPendingSync: boolean;
+  syncError: string | null;
+  retrySync: () => Promise<void>;
   addItem: (item: Omit<CartItem, "id" | "quantity"> & { quantity?: number }) => Promise<void>;
   updateQuantity: (id: string, quantity: number) => Promise<void>;
   removeItem: (id: string) => Promise<void>;
@@ -41,7 +44,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
   });
 
   const [loading, setLoading] = useState<boolean>(false);
+  const [syncError, setSyncError] = useState<string | null>(null);
   const isSyncingRef = useRef(false);
+
+  // Determinar si hay ítems locales pendientes de persistir en el servidor
+  const isPendingSync = useMemo(() => {
+    if (!userId) return false;
+    const hasUnsyncedItems = items.some((item) => !item.cartItemId);
+    return hasUnsyncedItems || syncError !== null;
+  }, [userId, items, syncError]);
 
   // Guardar en localStorage siempre que cambie items
   useEffect(() => {
@@ -61,6 +72,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
       // 2. Revisar si hay ítems locales pendientes de sincronizar (que no tengan cartItemId)
       const localPendingItems = items.filter((item) => !item.cartItemId);
+      let failedSyncCount = 0;
 
       if (localPendingItems.length > 0) {
         for (const localItem of localPendingItems) {
@@ -71,7 +83,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
               customProductId: localItem.customProductId,
               quantity: localItem.quantity,
             });
-          } catch (syncErr) {
+          } catch (syncErr: any) {
+            failedSyncCount++;
             console.warn("No se pudo sincronizar ítem local al backend:", syncErr);
           }
         }
@@ -81,8 +94,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
       } else {
         setItems(remoteItems);
       }
-    } catch (err) {
-      console.warn("Error al cargar carrito remoto:", err);
+
+      if (failedSyncCount > 0) {
+        setSyncError(`No se pudieron sincronizar ${failedSyncCount} productos locales con el servidor.`);
+      } else {
+        setSyncError(null);
+      }
+    } catch (err: any) {
+      console.warn("Error al cargar o sincronizar carrito remoto:", err);
+      setSyncError("Problemas de conexión: tu carrito local no está sincronizado con la base de datos.");
     } finally {
       setLoading(false);
       isSyncingRef.current = false;
@@ -94,6 +114,32 @@ export function CartProvider({ children }: { children: ReactNode }) {
       syncWithBackend(userId);
     }
   }, [userId]);
+
+  // Escuchar reconexión a internet para reintentar sincronización automática
+  useEffect(() => {
+    const handleOnline = () => {
+      if (userId) {
+        console.log("[CartContext] Conexión restaurada: ejecutando sincronización automática...");
+        syncWithBackend(userId);
+      }
+    };
+
+    window.addEventListener("online", handleOnline);
+    return () => window.removeEventListener("online", handleOnline);
+  }, [userId]);
+
+  // Reintento periódico en segundo plano si hay desincronización o error de red
+  useEffect(() => {
+    if (!userId || !isPendingSync) return;
+
+    const interval = setInterval(() => {
+      if (!isSyncingRef.current && navigator.onLine) {
+        syncWithBackend(userId);
+      }
+    }, 15000);
+
+    return () => clearInterval(interval);
+  }, [userId, isPendingSync]);
 
   const value = useMemo<CartContextValue>(() => {
     const addItem: CartContextValue["addItem"] = async (item) => {
@@ -156,8 +202,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
               return row;
             })
           );
-        } catch (err) {
+          setSyncError(null);
+        } catch (err: any) {
           console.warn("Error al persistir ítem en backend cart:", err);
+          setSyncError("Problemas de conexión: el producto se agregó localmente pero está pendiente de sincronizar.");
         }
       }
     };
@@ -184,8 +232,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
           } else {
             await cartService.updateQuantity(cartItemId, quantity);
           }
-        } catch (err) {
+          setSyncError(null);
+        } catch (err: any) {
           console.warn("Error al actualizar cantidad en backend:", err);
+          setSyncError("Problemas de conexión al actualizar cantidades en el servidor.");
         }
       }
     };
@@ -204,8 +254,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
       if (userId && cartItemId && !isNaN(cartItemId)) {
         try {
           await cartService.removeItem(cartItemId);
-        } catch (err) {
+          setSyncError(null);
+        } catch (err: any) {
           console.warn("Error al eliminar ítem de backend:", err);
+          setSyncError("Problemas de conexión al eliminar producto en el servidor.");
         }
       }
     };
@@ -217,8 +269,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
       if (userId) {
         try {
           await cartService.clearCart(userId);
-        } catch (err) {
+          setSyncError(null);
+        } catch (err: any) {
           console.warn("Error al vaciar carrito en backend:", err);
+          setSyncError("Problemas de conexión al vaciar carrito en el servidor.");
         }
       }
     };
@@ -229,9 +283,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
       }
     };
 
+    const retrySync = async () => {
+      if (userId) {
+        await syncWithBackend(userId);
+      }
+    };
+
     return {
       items,
       loading,
+      isPendingSync,
+      syncError,
+      retrySync,
       count: items.reduce((sum, item) => sum + item.quantity, 0),
       total: items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0),
       addItem,
@@ -240,7 +303,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       clear,
       refreshCart,
     };
-  }, [items, userId, loading]);
+  }, [items, userId, loading, isPendingSync, syncError]);
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }

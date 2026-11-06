@@ -232,36 +232,43 @@ CREATE TABLE inventory_logs (
 
 A continuación se detallan los errores, inconsistencias y vulnerabilidades identificadas en el estado actual del repositorio, junto con su respectiva solución:
 
-### 5.1. Seguridad y Autenticación en Endpoints Críticos
-* **Diagnóstico:** Rutas como `POST /api/products`, `POST /api/custom-products` y consultas de órdenes no validan el token JWT del usuario, permitiendo que clientes anónimos puedan publicar productos o enviar carritos sin sesión real.
-* **Solución:**
-  * Implementar middleware `authenticateToken` en todas las rutas protegidas.
-  * Inyectar el `user_id` desde el token verificado (`req.user.user_id`) en lugar de confiar en el cuerpo de la petición (`req.body.user_id`), impidiendo la suplantación de identidad.
+### 5.1. Seguridad y Autenticación en Endpoints Críticos ✅ (Completado)
+* **Diagnóstico:** Rutas como `POST /api/products`, `POST /api/custom-products` y consultas de órdenes no validaban el token JWT del usuario, permitiendo que clientes anónimos pudieran publicar productos o enviar carritos sin sesión real.
+* **Solución Implementada:**
+  * Implementado middleware `authenticateToken` en todas las rutas protegidas (`/cart`, `/custom-products`, `/orders`, `/payments`, `/products`).
+  * Inyección estricta de `req.user.user_id` desde el token verificado y eliminación total de fallbacks arbitrarios (`userRepo.findOne()`).
+  * Validación de propiedad de órdenes y carritos (o permiso de administrador).
 
-### 5.2. Desfase de Precios Hardcodeados en Creación Personalizada
-* **Diagnóstico:** En `customProduct.controller.ts` y en `CreatePage.tsx`, el precio base del disco personalizado está fijado con valores en código (`Vinyl = $799.00`, `CD = $99.00`). Si el administrador altera los precios en la base de datos, el cálculo del checkout queda inconsistente.
-* **Solución:**
-  * Crear un endpoint de configuración o tarifas base `GET /api/custom-products/pricing` que consulte directamente los precios vigentes desde la tabla de productos o configuración del sistema.
+### 5.2. Desfase de Precios Hardcodeados en Creación Personalizada ✅ (Completado)
+* **Diagnóstico:** En `customProduct.controller.ts` y en `CreatePage.tsx`, el precio base del disco personalizado estaba fijado con valores en código (`Vinyl = $799.00`, `CD = $99.00`). Si el administrador alteraba los precios en la base de datos, el cálculo del checkout quedaba inconsistente.
+* **Solución Implementada:**
+  * Creado endpoint `GET /api/custom-products/pricing` que consulta los precios base vigentes desde la tabla `products` en PostgreSQL.
+  * El controlador `createCustomProduct` resuelve de forma autoritativa el precio oficial en el backend evitando cualquier manipulación desde el cliente.
+  * En frontend, [`customProductService.ts`](./src/shared/api/services/customProductService.ts) y [`CreatePage.tsx`](./src/features/custom/CreatePage.tsx) consumen dinámicamente este endpoint al montar la vista y al seleccionar formato.
 
-### 5.3. Limpieza de Archivos Huérfanos en Multer ante Errores de Base de Datos
+### 5.3. Limpieza de Archivos Huérfanos en Multer ante Errores de Base de Datos ✅ (Completado)
 * **Diagnóstico:** Cuando un usuario sube una portada (`uploadCover`) o pistas (`uploadTracks`) y la inserción subsiguiente en PostgreSQL falla por error de clave foránea o validación, los archivos ya fueron guardados en el disco en `uploads/covers/` o `uploads/tracks/`, generando acumulación de basura y consumo innecesario de almacenamiento.
-* **Solución:**
-  * Envolver la operación en un bloque `try/catch` con rollback de archivos: si `save()` arroja una excepción, invocar `fs.promises.unlink()` sobre los archivos subidos en la petición actual.
+* **Solución Implementada:**
+  * Creado módulo de limpieza [`fileCleanup.ts`](../disc-market-backend/src/utils/fileCleanup.ts) con `safelyDeleteFile` y `safelyDeleteFiles`.
+  * Integrado rollback automático en bloques `try/catch` y caminos de error de `createCustomProduct` y `addTracksToCustomProduct`.
 
-### 5.4. Sincronización del Carrito Dual (Local vs. Servidor)
-* **Diagnóstico:** En `CartContext.tsx`, si la llamada al backend falla por problemas de conexión intermitente, el estado local no reintenta sincronizarse al volver la conexión, provocando discrepancias entre lo que el usuario ve en pantalla y lo que Stripe cobra (ya que Stripe valida el carrito de la base de datos).
-* **Solución:**
-  * Implementar una cola de sincronización con reintento automático y un banner visual en el carrito advirtiendo si hay cambios locales pendientes de sincronizar con el servidor.
+### 5.4. Sincronización del Carrito Dual (Local vs. Servidor) ✅ (Completado)
+* **Diagnóstico:** En `CartContext.tsx`, si la llamada al backend fallaba por problemas de conexión intermitente, el estado local no reintentaba sincronizarse al volver la conexión, provocando discrepancias entre lo que el usuario ve en pantalla y lo que Stripe cobra (ya que Stripe valida el carrito de la base de datos).
+* **Solución Implementada:**
+  * Implementada cola de sincronización con reintentos automáticos al dispararse el evento `'online'` y reintento en segundo plano cada 15 segundos si hay ítems pendientes o error de red.
+  * Incorporado estado `isPendingSync`, `syncError` y función `retrySync` en [`CartContext.tsx`](./src/context/CartContext.tsx).
+  * Añadido banner visual de advertencia interactivo en [`CartPage.tsx`](./src/features/cart/CartPage.tsx) con botón "Sincronizar ahora" y bloqueo de checkout preventivo hasta consolidar el carrito con el backend.
 
-### 5.5. Manejo del Pool de Conexiones de PostgreSQL (TypeORM)
-* **Diagnóstico:** La inicialización de `AppDataSource` no cuenta con política de reintentos exponenciales en caso de que el contenedor de PostgreSQL tarde en estar disponible tras reiniciar `docker-compose`.
-* **Solución:**
-  * Añadir función de conexión recursiva con hasta 5 reintentos y retardo progresivo (backoff exponencial) antes de abortar el arranque de la API.
+### 5.5. Manejo del Pool de Conexiones de PostgreSQL (TypeORM) ✅ (Completado)
+* **Diagnóstico:** La inicialización de `AppDataSource` no contaba con política de reintentos exponenciales en caso de que el contenedor de PostgreSQL tarde en estar disponible tras reiniciar `docker-compose`.
+* **Solución Implementada:**
+  * Implementada función `connectWithRetry` en [`index.ts`](../disc-market-backend/src/index.ts) con 5 intentos de conexión y retardo progresivo con retroceso exponencial (2s, 4s, 8s, 16s...) antes de abortar el arranque.
 
-### 5.6. Sanitización y Validación de Tipos MIME en Archivos
-* **Diagnóstico:** El filtro de Multer en `upload.middleware.ts` valida la extensión y el `file.mimetype` reportado por el cliente, pero no analiza los Magic Bytes del archivo real, abriendo riesgo de subida de ejecutables camuflados.
-* **Solución:**
-  * Utilizar una librería como `file-type` para verificar la cabecera binaria real del archivo antes de persistirlo definitivamente.
+### 5.6. Sanitización y Validación de Tipos MIME en Archivos ✅ (Completado)
+* **Diagnóstico:** El filtro de Multer en `upload.middleware.ts` validaba la extensión y el `file.mimetype` reportado por el cliente, pero no analizaba los Magic Bytes del archivo real, abriendo riesgo de subida de ejecutables camuflados.
+* **Solución Implementada:**
+  * Implementados validadores de cabeceras binarias `isValidImageMagicBytes` (JPEG `FF D8 FF`, PNG `89 50 4E 47`, WEBP `RIFF...WEBP`) y `isValidAudioMagicBytes` (MP3 ID3/Sync, WAV `RIFF...WAVE`, OGG `OggS`, FLAC `fLaC`, M4A `ftyp`).
+  * Integrados middlewares `validateImageMagicBytes` y `validateAudioMagicBytes` que analizan los primeros bytes en disco y eliminan automáticamente cualquier archivo fraudulento.
 
 ---
 
@@ -272,9 +279,9 @@ gantt
     title Cronograma de Implementación de Funcionalidades Pendientes
     dateFormat  YYYY-MM-DD
     section Fase 1: Estabilización y Seguridad
-    Auditoría y corrección de bugs críticos :active, 2026-10-17, 4d
-    Middleware JWT y Protección de Endpoints : 2026-10-21, 3d
-    Limpieza de archivos huérfanos Multer : 2026-10-24, 2d
+    Auditoría y corrección de bugs críticos :done, 2026-10-17, 4d
+    Middleware JWT y Protección de Endpoints :done, 2026-10-21, 3d
+    Limpieza de archivos huérfanos Multer :done, 2026-10-24, 2d
     section Fase 2: Gestión de Inventarios y Admin
     Modelo de Inventario y Movimientos (Kardex) : 2026-10-26, 4d
     Panel de Administración en Frontend (/admin) : 2026-10-30, 5d
@@ -290,7 +297,7 @@ gantt
 
 | Prioridad | Módulo / Funcionalidad | Impacto en Negocio | Esfuerzo Técnico | Estado |
 | :---: | :--- | :---: | :---: | :---: |
-| 🔴 **P0 (Crítico)** | Corrección de bugs de seguridad, middlewares JWT y control RBAC | Alto (Seguridad / Integridad) | Medio | ⏳ Pendiente |
+| 🔴 **P0 (Crítico)** | Corrección de bugs de seguridad, middlewares JWT y control RBAC | Alto (Seguridad / Integridad) | Medio | ✅ **Completado (Seguridad y Middlewares)** |
 | 🔴 **P0 (Crítico)** | Gestión de Inventarios (Control de existencias y prevención de sobreventa) | Alto (Operación comercial) | Medio-Alto | ⏳ Pendiente |
 | 🟡 **P1 (Alto)** | Panel de Usuario Administrador (CRUD de productos y precios) | Alto (Autonomía de negocio) | Medio | ⏳ Pendiente |
 | 🟡 **P1 (Alto)** | Subida de pistas de audio y validación de copyright | Alto (Funcionalidad core personalizada) | Alto | ⏳ Pendiente |

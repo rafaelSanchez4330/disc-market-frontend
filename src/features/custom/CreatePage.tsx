@@ -1,11 +1,14 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useCart } from "../../context/CartContext";
 import { useToast } from "../../context/ToastContext";
 import { customTemplates, formatLabel, formatPrice } from "../../data/products";
 import type { CustomDraft, Format } from "../../data/types";
 import { resolveAssetUrl } from "../../shared/api/mappers";
-import { customProductService } from "../../shared/api/services/customProductService";
+import {
+  customProductService,
+  type CustomPricingResponse,
+} from "../../shared/api/services/customProductService";
 import { AlbumCover } from "../../shared/ui/AlbumCover";
 import { Button } from "../../shared/ui/Button";
 
@@ -28,15 +31,32 @@ export function CreatePage() {
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [pricing, setPricing] = useState<CustomPricingResponse | null>(null);
 
   const { addItem } = useCart();
   const { push } = useToast();
   const navigate = useNavigate();
 
+  useEffect(() => {
+    customProductService
+      .getPricing()
+      .then((data) => setPricing(data))
+      .catch((err) => {
+        console.warn("No se pudo obtener tarifas remotas de personalización, usando valores por defecto:", err);
+      });
+  }, []);
+
   const template = useMemo(
     () => customTemplates.find((item) => item.format === draft.format) ?? customTemplates[0],
     [draft.format],
   );
+
+  const currentPrice = useMemo(() => {
+    if (pricing && pricing[draft.format]) {
+      return pricing[draft.format].base_price;
+    }
+    return template.price;
+  }, [pricing, draft.format, template.price]);
 
   function next() {
     setStep((s) => Math.min(s + 1, steps.length - 1));
@@ -65,7 +85,7 @@ export function CreatePage() {
         title: draft.title || template.name,
         message: draft.message,
         packaging: draft.packaging,
-        price: template.price,
+        price: currentPrice,
         coverFile: coverFile,
         tracks: draft.tracks,
       });
@@ -80,7 +100,7 @@ export function CreatePage() {
         name: created.title,
         artist: "Tu edición",
         format: draft.format,
-        unitPrice: template.price,
+        unitPrice: currentPrice,
         cover: template.cover,
         imageUrl: serverImageUrl || previewUrl,
         customSummary: `${draft.tracks.length} pistas · ${packagingLabel[draft.packaging]}${
@@ -99,7 +119,7 @@ export function CreatePage() {
         name: draft.title || template.name,
         artist: "Tu edición",
         format: draft.format,
-        unitPrice: template.price,
+        unitPrice: currentPrice,
         cover: template.cover,
         imageUrl: previewUrl,
         customSummary: `${draft.tracks.length} pistas · ${packagingLabel[draft.packaging]}${
@@ -136,20 +156,25 @@ export function CreatePage() {
       <section className="rounded-3xl border border-line bg-card p-6">
         {step === 0 ? (
           <div className="grid gap-4 md:grid-cols-2">
-            {customTemplates.map((item) => (
-              <button
-                key={item.productId}
-                type="button"
-                onClick={() => setDraft((d) => ({ ...d, format: item.format }))}
-                className={`rounded-2xl border p-5 text-left transition ${
-                  draft.format === item.format ? "border-accent" : "border-line hover:border-accent/50"
-                }`}
-              >
-                <p className="font-display text-2xl">{formatLabel[item.format]}</p>
-                <p className="mt-2 text-muted">{item.description}</p>
-                <p className="mt-3 text-accent">{formatPrice(item.price)}</p>
-              </button>
-            ))}
+            {customTemplates.map((item) => {
+              const displayPrice = pricing && pricing[item.format] ? pricing[item.format].base_price : item.price;
+              const displayDesc = pricing && pricing[item.format] ? pricing[item.format].description : item.description;
+
+              return (
+                <button
+                  key={item.productId}
+                  type="button"
+                  onClick={() => setDraft((d) => ({ ...d, format: item.format }))}
+                  className={`rounded-2xl border p-5 text-left transition ${
+                    draft.format === item.format ? "border-accent" : "border-line hover:border-accent/50"
+                  }`}
+                >
+                  <p className="font-display text-2xl">{formatLabel[item.format]}</p>
+                  <p className="mt-2 text-muted">{displayDesc}</p>
+                  <p className="mt-3 text-accent font-semibold">{formatPrice(displayPrice)}</p>
+                </button>
+              );
+            })}
           </div>
         ) : null}
 
@@ -252,7 +277,7 @@ export function CreatePage() {
             <div className="space-y-3 text-sm">
               <p>
                 <span className="text-muted">Formato: </span>
-                {formatLabel[draft.format]} · {formatPrice(template.price)}
+                {formatLabel[draft.format]} · {formatPrice(currentPrice)}
               </p>
               <p>
                 <span className="text-muted">Título: </span>
