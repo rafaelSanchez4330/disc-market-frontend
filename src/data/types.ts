@@ -50,11 +50,25 @@ export type CartItem = {
   customSummary?: string;
 };
 
+export type CustomTrackDraft = {
+  name: string;
+  order: number;
+  durationSeconds?: number;
+  file?: File | null;
+  fileSizeBytes?: number;
+  copyrightStatus?: "VERIFIED" | "PENDING" | "FLAGGED";
+  copyrightMatchTitle?: string | null;
+  copyrightMatchArtist?: string | null;
+  copyrightReason?: string | null;
+  previewAudioUrl?: string | null;
+};
+
 export type CustomDraft = {
   format: Format;
   title: string;
   message: string;
   packaging: "standard" | "gift" | "collector";
   coverName: string | null;
-  tracks: { name: string; order: number }[];
+  tracks: CustomTrackDraft[];
+  disclaimerAccepted?: boolean;
 };

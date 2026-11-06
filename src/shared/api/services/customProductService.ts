@@ -9,6 +9,20 @@ export interface CreateCustomProductDto {
   price?: number;
   coverFile?: File | null;
   tracks?: Array<{ name: string; order: number }>;
+  copyrightDisclaimerAccepted?: boolean;
+}
+
+export interface ScanTrackResponse {
+  fileName: string;
+  status: "VERIFIED" | "FLAGGED";
+  matchedTitle: string | null;
+  matchedArtist: string | null;
+  label: string | null;
+  reason: string;
+  fingerprint: string;
+  durationSeconds: number;
+  fileSizeBytes: number;
+  sha256Hash: string;
 }
 
 export interface CustomPricingItem {
@@ -46,11 +60,47 @@ export const customProductService = {
       formData.append("cover", dto.coverFile);
     }
 
+    if (dto.copyrightDisclaimerAccepted !== undefined) {
+      formData.append("copyright_disclaimer_accepted", String(dto.copyrightDisclaimerAccepted));
+    }
+
     if (dto.tracks && dto.tracks.length > 0) {
       formData.append("tracks", JSON.stringify(dto.tracks));
     }
 
     return apiClient.post<BackendCustomProduct>("/custom-products", formData);
+  },
+
+  /**
+   * Pre-escanea una pista de audio para análisis de copyright y duración en vivo.
+   */
+  scanTrack: async (audioFile: File, clientDuration?: number): Promise<ScanTrackResponse> => {
+    const formData = new FormData();
+    formData.append("audio", audioFile);
+    if (clientDuration) {
+      formData.append("duration", clientDuration.toString());
+    }
+    return apiClient.post<ScanTrackResponse>("/custom-products/scan-track", formData);
+  },
+
+  /**
+   * Sube las pistas de audio binarias vinculadas al disco personalizado.
+   */
+  uploadTracks: async (
+    customProductId: number,
+    audioFiles: File[],
+    tracksMeta: Array<{ name: string; order: number; duration?: number }>
+  ): Promise<{ message: string; tracks: any[]; total_duration: number }> => {
+    const formData = new FormData();
+    audioFiles.forEach((file) => {
+      formData.append("tracks", file);
+    });
+    formData.append("tracks_meta", JSON.stringify(tracksMeta));
+
+    return apiClient.post<{ message: string; tracks: any[]; total_duration: number }>(
+      `/custom-products/${customProductId}/tracks`,
+      formData
+    );
   },
 
   /**
