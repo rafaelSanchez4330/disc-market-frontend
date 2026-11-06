@@ -120,3 +120,34 @@ export interface BackendOrder {
     shipping_status: string;
   };
 }
+
+export interface BackendUserPreference {
+  preference_id: number;
+  user_id: number;
+  phone?: string | null;
+  preferred_format: string; // 'VINYL', 'CD', 'ALL'
+  theme: string; // 'dark', 'light', 'high-contrast'
+  notify_order_status: boolean;
+  notify_newsletter: boolean;
+  default_address_line1?: string | null;
+  default_address_line2?: string | null;
+  default_city?: string | null;
+  default_state?: string | null;
+  default_postal_code?: string | null;
+  default_country: string;
+  avatar_url?: string | null;
+  updated_at?: string;
+}
+
+export interface BackendUserStats {
+  total_orders: number;
+  total_spent: number;
+  last_order_date: string | null;
+}
+
+export interface BackendUserProfileResponse {
+  user: BackendUser;
+  preferences: BackendUserPreference;
+  stats: BackendUserStats;
+}
+

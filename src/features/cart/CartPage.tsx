@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useCart } from "../../context/CartContext";
@@ -6,6 +6,7 @@ import { useToast } from "../../context/ToastContext";
 import { formatLabel, formatPrice } from "../../data/products";
 import { orderService } from "../../shared/api/services/orderService";
 import { paymentService } from "../../shared/api/services/paymentService";
+import { userService } from "../../shared/api/services/userService";
 import { StripeCheckoutModal } from "./components/StripeCheckoutModal";
 import { AlbumCover } from "../../shared/ui/AlbumCover";
 import { Button } from "../../shared/ui/Button";
@@ -13,7 +14,17 @@ import { EmptyState } from "../../shared/ui/EmptyState";
 import { Price } from "../../shared/ui/Price";
 
 export function CartPage() {
-  const { items, total, updateQuantity, removeItem, clear } = useCart();
+  const {
+    items,
+    total,
+    loading,
+    isPendingSync,
+    syncError,
+    retrySync,
+    updateQuantity,
+    removeItem,
+    clear,
+  } = useCart();
   const { user } = useAuth();
   const { push } = useToast();
   const navigate = useNavigate();
@@ -21,6 +32,34 @@ export function CartPage() {
   const [shippingAddress, setShippingAddress] = useState(
     "Av. Insurgentes Sur 1450, Col. Actipan, CDMX"
   );
+
+  useEffect(() => {
+    if (user) {
+      userService
+        .getProfile()
+        .then((profile) => {
+          const pref = profile.preferences;
+          if (pref && pref.default_address_line1) {
+            const formatted = [
+              pref.default_address_line1,
+              pref.default_address_line2,
+              pref.default_city,
+              pref.default_state,
+              pref.default_postal_code,
+              pref.default_country,
+            ]
+              .filter(Boolean)
+              .join(", ");
+            if (formatted) {
+              setShippingAddress(formatted);
+            }
+          }
+        })
+        .catch(() => {
+          // Si falla, se conserva la dirección por defecto
+        });
+    }
+  }, [user]);
   const [paymentMethod, setPaymentMethod] = useState("credit_card");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [stripeClientSecret, setStripeClientSecret] = useState<string | null>(null);
@@ -48,6 +87,17 @@ export function CartPage() {
     if (!userId) {
       push("No se pudo identificar tu cuenta de usuario");
       return;
+    }
+
+    // Si existen cambios locales sin persistir, sincronizar con el backend antes de cobrar
+    if (isPendingSync) {
+      push("Sincronizando los cambios del carrito con el servidor...");
+      try {
+        await retrySync();
+      } catch {
+        push("No se pudo sincronizar el carrito con la base de datos. Revisa tu conexión.");
+        return;
+      }
     }
 
     setIsSubmitting(true);
@@ -111,6 +161,33 @@ export function CartPage() {
     <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_340px]">
       <section className="space-y-4">
         <h1 className="font-display text-4xl">Carrito</h1>
+
+        {user && (isPendingSync || syncError) && (
+          <div className="rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4 text-amber-200 shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div className="flex items-start sm:items-center gap-3">
+                <span className="text-xl">⚠️</span>
+                <div>
+                  <p className="font-semibold text-sm">Cambios pendientes de sincronizar</p>
+                  <p className="text-xs text-amber-300/80">
+                    {syncError ||
+                      "Hay modificaciones en tu carrito local pendientes de confirmarse en la base de datos."}
+                  </p>
+                </div>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={retrySync}
+                disabled={loading}
+                className="border-amber-400/50 text-amber-300 hover:bg-amber-500/20 text-xs px-3 py-1.5 self-start sm:self-auto shrink-0"
+              >
+                {loading ? "Sincronizando..." : "Sincronizar ahora"}
+              </Button>
+            </div>
+          </div>
+        )}
+
         {items.map((item) => (
           <article
             key={item.id}
@@ -226,10 +303,12 @@ export function CartPage() {
         <Button
           className="w-full mt-2"
           onClick={handleCheckout}
-          disabled={isSubmitting}
+          disabled={isSubmitting || (Boolean(user) && isPendingSync && loading)}
         >
           {isSubmitting
             ? "Conectando con pasarela..."
+            : Boolean(user) && isPendingSync && loading
+            ? "Sincronizando carrito..."
             : paymentMethod === "credit_card"
             ? "Pagar con Stripe"
             : "Confirmar pedido"}
