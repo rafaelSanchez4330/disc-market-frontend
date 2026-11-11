@@ -212,6 +212,11 @@ export function formatPrice(value: number) {
   }).format(value);
 }
 
+/** Formato monetario con centavos, para montos de cobro (siempre en pesos mexicanos). */
+export function formatMoney(value: number) {
+  return new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" }).format(value);
+}
+
 export function formatDuration(seconds: number) {
   const m = Math.floor(seconds / 60);
   const s = seconds % 60;

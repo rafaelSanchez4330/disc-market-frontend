@@ -8,6 +8,7 @@ import {
 import { stripePromise } from "../../../shared/lib/stripe";
 import { paymentService } from "../../../shared/api/services/paymentService";
 import { Button } from "../../../shared/ui/Button";
+import { formatMoney } from "../../../data/products";
 
 interface StripeCheckoutModalProps {
   isOpen: boolean;
@@ -92,7 +93,7 @@ function CheckoutForm({
         <div className="rounded-xl border border-line/60 bg-ink/60 p-3 text-xs text-muted flex items-center justify-between">
           <span>Total a pagar con Stripe:</span>
           <span className="font-mono font-bold text-accent text-base">
-            ${amount.toFixed(2)} USD
+            {formatMoney(amount)} MXN
           </span>
         </div>
 
@@ -128,7 +129,7 @@ function CheckoutForm({
             disabled={!stripe || isProcessing}
             className="w-2/3"
           >
-            {isProcessing ? "Procesando pago..." : `Pagar $${amount.toFixed(2)}`}
+            {isProcessing ? "Procesando pago..." : `Pagar ${formatMoney(amount)} MXN`}
           </Button>
         </div>
 
