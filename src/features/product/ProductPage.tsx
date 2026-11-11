@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import { useCart } from "../../context/CartContext";
 import { useToast } from "../../context/ToastContext";
 import { customTemplates, formatDuration, formatLabel } from "../../data/products";
@@ -52,6 +52,10 @@ export function ProductPage() {
         </div>
       </div>
     );
+  }
+
+  if (product?.isCustomizable) {
+    return <Navigate to={`/crear?formato=${product.format}`} replace />;
   }
 
   if (!product) {

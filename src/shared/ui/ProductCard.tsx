@@ -8,7 +8,10 @@ import { Price } from "./Price";
 export function ProductCard({ product }: { product: Product }) {
   return (
     <article className="group overflow-hidden rounded-2xl border border-line bg-card transition duration-200 hover:-translate-y-1 hover:border-accent/70">
-      <Link to={`/productos/${product.productId}`} className="block">
+      <Link
+        to={product.isCustomizable ? `/crear?formato=${product.format}` : `/productos/${product.productId}`}
+        className="block"
+      >
         <AlbumCover
           cover={product.cover}
           imageUrl={product.imageUrl}
@@ -30,7 +33,7 @@ export function ProductCard({ product }: { product: Product }) {
             <Badge status={product.availabilityStatus} />
           </div>
           <span className="inline-flex text-sm font-semibold text-cream/80 group-hover:text-accent">
-            Ver más →
+            {product.isCustomizable ? "Personalizar →" : "Ver más →"}
           </span>
         </div>
       </Link>

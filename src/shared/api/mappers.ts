@@ -56,6 +56,18 @@ export function normalizeFormat(rawFormat: string | undefined): Format {
   return upper.includes("VINYL") || upper.includes("VINIL") ? "VINYL" : "CD";
 }
 
+const CUSTOM_TEMPLATE_NAMES = ["custom cd", "custom vinyl", "cd personalizado", "vinilo personalizado"];
+
+/**
+ * Indica si un producto del backend es la plantilla base para un disco personalizado.
+ */
+export function isCustomTemplateProduct(p: Pick<BackendProduct, "name" | "category">): boolean {
+  return (
+    CUSTOM_TEMPLATE_NAMES.includes(p.name.trim().toLowerCase()) ||
+    p.category?.category_name?.toLowerCase() === "custom"
+  );
+}
+
 /**
  * Mapea un producto del backend a la estructura que utiliza la interfaz.
  */
@@ -72,6 +84,8 @@ export function mapBackendProduct(p: BackendProduct): Product {
   const format = normalizeFormat(p.format);
   const imageUrl = resolveAssetUrl(p.image_url);
   const cover = generateCoverTheme(p.name, p.product_id);
+  const isCustom = isCustomTemplateProduct(p);
+  if (isCustom) availabilityStatus = "MADE_TO_ORDER";
 
   return {
     productId: p.product_id,
@@ -81,8 +95,8 @@ export function mapBackendProduct(p: BackendProduct): Product {
     format,
     price,
     description: p.description || "Sin descripción disponible.",
-    productType: "REGULAR",
-    isCustomizable: false,
+    productType: isCustom ? "CUSTOM_TEMPLATE" : "REGULAR",
+    isCustomizable: isCustom,
     availabilityStatus,
     stock,
     cover,

@@ -7,6 +7,7 @@ import {
   type ReactNode,
 } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
 import { useCart } from "../../context/CartContext";
 import { useToast } from "../../context/ToastContext";
 import { customTemplates, formatLabel, formatPrice } from "../../data/products";
@@ -70,6 +71,7 @@ export function CreatePage() {
   const [pricing, setPricing] = useState<CustomPricingResponse | null>(null);
 
   const { addItem } = useCart();
+  const { user } = useAuth();
   const { push } = useToast();
   const navigate = useNavigate();
 
@@ -112,28 +114,31 @@ export function CreatePage() {
     return draft.tracks.some((t) => t.copyrightStatus === "PENDING");
   }, [draft.tracks]);
 
+  // Valida la información obligatoria de cada paso para no permitir discos personalizados vacíos.
+  function stepError(index: number): string | null {
+    if (index === 1) {
+      if (draft.tracks.length === 0) return "Debes incluir al menos una pista en tu proyecto.";
+      if (draft.tracks.some((t) => !t.file)) return "Cada pista debe tener un archivo de audio.";
+      if (isOverCapacity) return "La duración o cantidad de pistas excede la capacidad física del formato.";
+      if (hasFlaggedTracks) return "Debes retirar las pistas con conflicto de derechos de autor antes de continuar.";
+      if (isAnalyzingTracks) return "Espera a que concluya el análisis de derechos de autor antes de continuar.";
+      if (draft.tracks.some((t) => t.copyrightStatus !== "VERIFIED")) return "Todas las pistas deben ser verificadas exitosamente antes de continuar.";
+    }
+    if (index === 2 && !coverFile) return "Sube una imagen para la portada de tu disco.";
+    if (index === 3) {
+      const title = draft.title.trim();
+      if (title.length < 2) return "Escribe un título para tu disco (mínimo 2 caracteres).";
+      if (title.length > 100) return "El título no puede superar los 100 caracteres.";
+    }
+    return null;
+  }
+
+  const currentStepError = stepError(step);
+
   function next() {
-    if (step === 1) {
-      if (draft.tracks.length === 0) {
-        push("Debes incluir al menos una pista en tu proyecto.");
-        return;
-      }
-      if (isOverCapacity) {
-        push("La duración o cantidad de pistas excede la capacidad física del formato.");
-        return;
-      }
-      if (hasFlaggedTracks) {
-        push("Debes retirar las pistas con conflicto de derechos de autor antes de continuar.");
-        return;
-      }
-      if (isAnalyzingTracks) {
-        push("Espera a que concluya el análisis de derechos de autor antes de continuar.");
-        return;
-      }
-      if (draft.tracks.some((t) => t.copyrightStatus !== "VERIFIED")) {
-        push("Todas las pistas deben ser verificadas exitosamente antes de continuar.");
-        return;
-      }
+    if (currentStepError) {
+      push(currentStepError);
+      return;
     }
     setStep((s) => Math.min(s + 1, steps.length - 1));
   }
@@ -257,21 +262,6 @@ export function CreatePage() {
     [draft.tracks.length, push]
   );
 
-  function handleAddManualTrack(name: string) {
-    setDraft((d) => ({
-      ...d,
-      tracks: [
-        ...d.tracks,
-        {
-          name,
-          order: d.tracks.length + 1,
-          durationSeconds: 180,
-          copyrightStatus: "VERIFIED",
-        },
-      ],
-    }));
-  }
-
   function handleMoveTrack(index: number, dir: -1 | 1) {
     setDraft((d) => {
       const nextTracks = [...d.tracks];
@@ -301,6 +291,21 @@ export function CreatePage() {
   }
 
   async function addToCart() {
+    if (!user) {
+      push("Inicia sesión para guardar y comprar tu disco personalizado.");
+      navigate("/iniciar-sesion");
+      return;
+    }
+
+    for (const index of [1, 2, 3]) {
+      const error = stepError(index);
+      if (error) {
+        push(error);
+        setStep(index);
+        return;
+      }
+    }
+
     if (draft.tracks.length === 0) {
       push("Debes incluir al menos una pista en tu proyecto.");
       return;
@@ -340,7 +345,7 @@ export function CreatePage() {
       // 2. Guardar producto personalizado en PostgreSQL con su portada y aceptación legal
       const created = await customProductService.create({
         format: draft.format,
-        title: draft.title || template.name,
+        title: draft.title.trim(),
         message: draft.message,
         packaging: draft.packaging,
         price: currentPrice,
@@ -447,7 +452,6 @@ export function CreatePage() {
             hasFlaggedTracks={hasFlaggedTracks}
             isAnalyzingTracks={isAnalyzingTracks}
             onAddFiles={handleAddAudioFiles}
-            onAddManual={handleAddManualTrack}
             onMove={handleMoveTrack}
             onRemove={handleRemoveTrack}
           />
@@ -456,7 +460,7 @@ export function CreatePage() {
         {step === 2 ? (
           <div className="space-y-4">
             <label className="block space-y-3">
-              <span className="text-muted">Sube una imagen para la portada o la etiqueta (JPEG, PNG o WebP)</span>
+              <span className="text-muted">Sube una imagen para la portada o la etiqueta (JPEG, PNG o WebP) *</span>
               <input
                 type="file"
                 accept="image/jpeg,image/png,image/webp"
@@ -481,11 +485,13 @@ export function CreatePage() {
 
         {step === 3 ? (
           <div className="grid gap-4 md:grid-cols-2">
-            <Field label="Título del proyecto">
+            <Field label="Título del proyecto *">
               <input
                 value={draft.title}
                 onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))}
                 className="w-full rounded-xl border border-line bg-ink px-3 py-2"
+                maxLength={100}
+                required
                 placeholder="Mi mixtape"
               />
             </Field>
@@ -534,7 +540,7 @@ export function CreatePage() {
                 </p>
                 <p>
                   <span className="text-muted">Portada: </span>
-                  {draft.coverName || "Diseño predeterminado"}
+                  {draft.coverName || "Sin portada"}
                 </p>
                 <p>
                   <span className="text-muted">Empaque: </span>
@@ -609,24 +615,18 @@ export function CreatePage() {
             Atrás
           </Button>
           {step < steps.length - 1 ? (
-            <Button
-              onClick={next}
-              disabled={
-                step === 1 &&
-                (isOverCapacity ||
-                  hasFlaggedTracks ||
-                  isAnalyzingTracks ||
-                  draft.tracks.length === 0 ||
-                  draft.tracks.some((t) => t.copyrightStatus !== "VERIFIED"))
-              }
-            >
-              Continuar
-            </Button>
+            <div className="flex flex-col items-end gap-1">
+              <Button onClick={next} disabled={Boolean(currentStepError)}>
+                Continuar
+              </Button>
+              {currentStepError ? <p className="text-xs text-vinyl">{currentStepError}</p> : null}
+            </div>
           ) : (
             <Button
               onClick={addToCart}
               disabled={
                 submitting ||
+                [1, 2, 3].some((index) => stepError(index) !== null) ||
                 draft.tracks.length === 0 ||
                 isOverCapacity ||
                 hasFlaggedTracks ||
@@ -680,7 +680,6 @@ interface TrackStepProps {
   hasFlaggedTracks: boolean;
   isAnalyzingTracks: boolean;
   onAddFiles: (files: File[]) => Promise<void>;
-  onAddManual: (name: string) => void;
   onMove: (index: number, dir: -1 | 1) => void;
   onRemove: (index: number) => void;
 }
@@ -694,11 +693,9 @@ function TrackStep({
   hasFlaggedTracks,
   isAnalyzingTracks,
   onAddFiles,
-  onAddManual,
   onMove,
   onRemove,
 }: TrackStepProps) {
-  const [manualName, setManualName] = useState("");
   const [isDragging, setIsDragging] = useState(false);
   const [playingOrder, setPlayingOrder] = useState<number | null>(null);
   const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
@@ -855,33 +852,6 @@ function TrackStep({
         <p className="mt-1 text-xs text-muted">
           Formatos admitidos: MP3, WAV, FLAC, M4A, AAC (hasta {formatLimit.maxFileSizeMB} MB por pista)
         </p>
-      </div>
-
-      {/* Opción de ingreso manual o título rápido */}
-      <div className="flex flex-col gap-2 sm:flex-row">
-        <input
-          value={manualName}
-          onChange={(e) => setManualName(e.target.value)}
-          className="flex-1 rounded-xl border border-line bg-ink px-3 py-2 text-sm"
-          placeholder="O escribe el nombre de una pista manualmente..."
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && manualName.trim()) {
-              onAddManual(manualName.trim());
-              setManualName("");
-            }
-          }}
-        />
-        <Button
-          type="button"
-          variant="ghost"
-          onClick={() => {
-            if (!manualName.trim()) return;
-            onAddManual(manualName.trim());
-            setManualName("");
-          }}
-        >
-          Agregar sin audio
-        </Button>
       </div>
 
       {/* Lista de Pistas */}

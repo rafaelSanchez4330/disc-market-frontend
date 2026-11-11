@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { adminService, type AdminProduct, type AdminUser, type AdminOrder, type AdminSummary } from '../../shared/api/services/adminService';
 
 type Tab = 'inventory' | 'users' | 'orders';
-const money = (value: number) => new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'USD' }).format(value);
+const money = (value: number) => new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(value);
 const date = (value: string) => new Date(value).toLocaleString('es-MX');
 const inputStyle = 'w-full rounded-xl border border-line bg-ink px-3 py-2 text-sm text-cream focus:outline-none focus:ring-2 focus:ring-accent';
 const buttonStyle = 'rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-ink transition hover:bg-accent-dark disabled:cursor-not-allowed disabled:opacity-50';
@@ -110,7 +110,7 @@ export function AdminPage() {
     <section aria-label="Resumen de ventas" className="space-y-4 rounded-3xl border border-line bg-card p-5 sm:p-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div><h2 className="font-display text-xl">Resumen de ventas</h2>
-          <p className="mt-1 text-xs text-muted">Importes en USD. Solo pedidos pagados y no cancelados. Fechas en UTC.</p></div>
+          <p className="mt-1 text-xs text-muted">Importes en MXN. Solo pedidos pagados y no cancelados. Fechas en UTC.</p></div>
         <form className="flex flex-wrap items-end gap-3" onSubmit={e => { e.preventDefault(); setDates({ ...draftDates }); setPage(1); }}>
           <label className="text-xs text-muted">Desde<input type="date" className={`${inputStyle} mt-1`} value={draftDates.from}
             max={draftDates.to || undefined} onChange={e => setDraftDates(d => ({ ...d, from: e.target.value }))} /></label>
@@ -154,7 +154,7 @@ export function AdminPage() {
           {total === 0 ? <p className="py-10 text-center text-muted">No hay resultados para esta consulta.</p> : <>
             {tab === 'inventory' && <div className="overflow-x-auto"><table className="w-full text-left text-sm">
               <caption className="sr-only">Inventario y entrada de stock</caption>
-              <thead className="text-xs text-muted"><tr>{['Producto', 'Precio USD', 'Disponible', 'Reservado', 'Entrada de stock'].map(h => <th key={h} className="p-3">{h}</th>)}</tr></thead>
+              <thead className="text-xs text-muted"><tr>{['Producto', 'Precio MXN', 'Disponible', 'Reservado', 'Entrada de stock'].map(h => <th key={h} className="p-3">{h}</th>)}</tr></thead>
               <tbody>{products.map(p => <tr key={p.product_id} className="border-t border-line">
                 <td className="p-3"><p className="font-semibold">{p.name}</p><p className="text-xs text-muted">{p.artist} · {p.format} · #{p.product_id}</p></td>
                 <td className="whitespace-nowrap p-3">{money(p.price)}</td>
@@ -165,7 +165,7 @@ export function AdminPage() {
             </table></div>}
             {tab === 'users' && <div className="overflow-x-auto"><table className="w-full text-left text-sm">
               <caption className="sr-only">Usuarios registrados y compras</caption>
-              <thead className="text-xs text-muted"><tr>{['Usuario', 'Contacto', 'Rol', 'Registro', 'Pedidos', 'Compras pagadas USD'].map(h => <th key={h} className="p-3">{h}</th>)}</tr></thead>
+              <thead className="text-xs text-muted"><tr>{['Usuario', 'Contacto', 'Rol', 'Registro', 'Pedidos', 'Compras pagadas MXN'].map(h => <th key={h} className="p-3">{h}</th>)}</tr></thead>
               <tbody>{users.map(u => <tr key={u.user_id} className="border-t border-line">
                 <td className="p-3"><p className="font-semibold">{u.name}</p><p className="text-xs text-muted">#{u.user_id}</p></td>
                 <td className="p-3"><p>{u.email}</p><p className="text-xs text-muted">{u.phone || 'Sin teléfono'}</p></td>
@@ -178,7 +178,7 @@ export function AdminPage() {
                 <div><span className="font-semibold">Pedido #{o.order_id}</span><p className="mt-1 text-xs text-muted">{o.user?.name || 'Usuario no disponible'} · {date(o.created_at)}</p></div>
                 <div className="flex flex-wrap items-center gap-3 text-sm"><span className="rounded-full border border-line px-3 py-1">{labels[o.order_status] || o.order_status}</span>
                   <span className={o.payment_status === 'paid' ? 'text-ok' : 'text-accent'}>{labels[o.payment_status] || o.payment_status}</span>
-                  <strong>{money(o.total_amount)} USD</strong><span aria-hidden="true">⌄</span></div>
+                  <strong>{money(o.total_amount)} MXN</strong><span aria-hidden="true">⌄</span></div>
               </summary>
               <div className="mt-4 space-y-3 border-t border-line pt-4 text-sm">
                 <p className="break-all text-muted">{o.user?.email}</p>

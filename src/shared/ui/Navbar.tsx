@@ -60,7 +60,7 @@ export function Navbar() {
                 <span className="grid h-5 w-5 place-items-center rounded-full bg-accent/20 text-xs">
                   {user.avatar_url && !user.avatar_url.startsWith("http") ? user.avatar_url : "👤"}
                 </span>
-                <span className="max-w-[110px] truncate font-medium">{user.name}</span>
+                <span className="max-w-[180px] truncate font-medium">Mi cuenta · {user.name}</span>
               </Link>
               <button
                 type="button"
@@ -103,7 +103,7 @@ export function Navbar() {
                 className="flex items-center gap-2 text-accent font-medium"
               >
                 <span>👤</span>
-                <span>Mi Perfil ({user.name})</span>
+                <span>Mi cuenta ({user.name})</span>
               </NavLink>
               <button
                 type="button"

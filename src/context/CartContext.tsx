@@ -15,13 +15,27 @@ type CartContextValue = {
 };
 const CartContext = createContext<CartContextValue | null>(null);
 const STORAGE_KEY = 'disc-market-cart';
+// Carrito de invitado separado: solo se elimina cuando sus artículos se sincronizan con la cuenta.
+const GUEST_KEY = 'disc-market-guest-cart';
+
+function readList(key: string): CartItem[] {
+  try { const saved = JSON.parse(localStorage.getItem(key) || '[]'); return Array.isArray(saved) ? saved : []; } catch { return []; }
+}
+function dedupe(list: CartItem[]): CartItem[] {
+  const seen = new Set<string>();
+  return list.filter(item => (seen.has(item.id) ? false : (seen.add(item.id), true)));
+}
+function initialItems(): CartItem[] {
+  const hasUser = Boolean(localStorage.getItem('disc-market-user'));
+  const snapshot = readList(STORAGE_KEY);
+  // Los artículos sin cartItemId del snapshot provienen de versiones anteriores (carrito de invitado).
+  return dedupe([...(hasUser ? snapshot.filter(item => item.cartItemId) : []), ...readList(GUEST_KEY), ...snapshot.filter(item => !item.cartItemId)]);
+}
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const userId = user?.user_id || user?.userId;
-  const [items, setItems] = useState<CartItem[]>(() => {
-    try { const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); return Array.isArray(saved) ? saved : []; } catch { return []; }
-  });
+  const [items, setItems] = useState<CartItem[]>(initialItems);
   const currentItems = useRef(items); currentItems.current = items;
   const [loading, setLoading] = useState(false);
   const [checkoutPending, setCheckoutPending] = useState(false);
@@ -30,19 +44,30 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const mutating = useRef(false);
   const previousUser = useRef<number | undefined>(userId);
   const isPendingSync = Boolean(userId) && (items.some(item => !item.cartItemId) || syncError !== null);
-  useEffect(() => { localStorage.setItem(STORAGE_KEY, JSON.stringify(items)); }, [items]);
+  useEffect(() => {
+    localStorage.setItem(GUEST_KEY, JSON.stringify(items.filter(item => !item.cartItemId)));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(userId ? items.filter(item => item.cartItemId) : []));
+  }, [items, userId]);
 
   const loadCart = useCallback(async (uid: number, importGuests = false) => {
     const initial = await cartService.getCart(uid);
     setCheckoutPending(Boolean(initial.checkout_pending));
-    const pending = currentItems.current.filter(item => !item.cartItemId);
+    const pending = dedupe([...currentItems.current.filter(item => !item.cartItemId), ...(importGuests ? readList(GUEST_KEY) : [])]);
     const failed: CartItem[] = [];
+    const imported = new Set<string>();
     let failure = '';
     if (importGuests) for (const item of pending) {
       try {
         await cartService.addItem({ userId: uid, productId: item.customProductId ? undefined : item.productId,
           customProductId: item.customProductId, quantity: item.quantity });
+        imported.add(item.id);
       } catch (error) { failed.push(item); failure = error instanceof Error ? error.message : 'No se pudo sincronizar el carrito.'; }
+    }
+    // Retira del almacenamiento de invitado lo ya importado para no duplicarlo si algo falla después.
+    if (imported.size) {
+      localStorage.setItem(GUEST_KEY, JSON.stringify(readList(GUEST_KEY).filter(item => !imported.has(item.id))));
+      setItems(current => current.filter(item => !imported.has(item.id)));
+      currentItems.current = currentItems.current.filter(item => !imported.has(item.id));
     }
     const remote = importGuests && pending.length ? await cartService.getCart(uid) : initial;
     setCheckoutPending(Boolean(remote.checkout_pending));
@@ -61,7 +86,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, [userId, loadCart]);
 
   useEffect(() => {
-    if (previousUser.current && previousUser.current !== userId) { setItems([]); currentItems.current = []; setCheckoutPending(false); setSyncError(null); }
+    if (previousUser.current && previousUser.current !== userId) {
+      // Al cerrar sesión o cambiar de cuenta se descarta el carrito del servidor, nunca lo pendiente de sincronizar.
+      const unsynced = currentItems.current.filter(item => !item.cartItemId);
+      setItems(unsynced); currentItems.current = unsynced; setCheckoutPending(false); setSyncError(null);
+    }
     previousUser.current = userId;
     if (userId) void retrySync().catch(() => {});
   }, [userId, retrySync]);

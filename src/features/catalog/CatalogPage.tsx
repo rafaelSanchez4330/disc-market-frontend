@@ -33,7 +33,13 @@ export function CatalogPage({ presetFormat }: Props) {
     ])
       .then(([productsData, categoriesData]) => {
         // Incluir las plantillas personalizadas en la lista si se selecciona "Custom"
-        const allProducts = [...productsData, ...customTemplates];
+        const remoteCustomFormats = new Set(
+          productsData.filter((p) => p.isCustomizable).map((p) => p.format)
+        );
+        const allProducts = [
+          ...productsData,
+          ...customTemplates.filter((t) => !remoteCustomFormats.has(t.format)),
+        ];
         setProductsList(allProducts);
         setCategoriesList(categoriesData);
       })

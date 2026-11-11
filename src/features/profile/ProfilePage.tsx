@@ -4,19 +4,20 @@ import { useAuth } from "../../context/AuthContext";
 import { formatPrice } from "../../data/products";
 import { userService } from "../../shared/api/services/userService";
 import type { BackendUserPreference, BackendUserProfileResponse } from "../../shared/api/types";
+import { AccountSummaryTab } from "./components/AccountSummaryTab";
 import { PersonalInfoTab } from "./components/PersonalInfoTab";
 import { ShippingAddressTab } from "./components/ShippingAddressTab";
 import { SecurityTab } from "./components/SecurityTab";
 import { PreferencesTab } from "./components/PreferencesTab";
 import { OrderHistoryTab } from "./components/OrderHistoryTab";
 
-type TabKey = "personal" | "address" | "security" | "preferences" | "orders";
+type TabKey = "summary" | "personal" | "address" | "security" | "preferences" | "orders";
 
 export function ProfilePage() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
 
-  const [activeTab, setActiveTab] = useState<TabKey>("personal");
+  const [activeTab, setActiveTab] = useState<TabKey>("summary");
   const [profileData, setProfileData] = useState<BackendUserProfileResponse | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -60,6 +61,7 @@ export function ProfilePage() {
     : "Coleccionista Activo";
 
   const tabs: { key: TabKey; label: string; icon: string; count?: number }[] = [
+    { key: "summary", label: "Mi Cuenta", icon: "🪪" },
     { key: "personal", label: "Datos Personales", icon: "👤" },
     { key: "address", label: "Dirección de Entrega", icon: "📍" },
     { key: "preferences", label: "Preferencias & Formato", icon: "⚙️" },
@@ -158,6 +160,9 @@ export function ProfilePage() {
 
       {/* Contenido de la Pestaña Activa */}
       <div className="transition-all">
+        {activeTab === "summary" && (
+          <AccountSummaryTab profile={profileData} fallbackUser={user} onEdit={setActiveTab} />
+        )}
         {activeTab === "personal" && (
           <PersonalInfoTab
             initialPreferences={preferences}
