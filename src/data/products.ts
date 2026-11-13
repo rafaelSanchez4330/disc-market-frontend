@@ -7,7 +7,7 @@ export const products: Product[] = [
     name: "Thriller",
     artist: "Michael Jackson",
     format: "VINYL",
-    price: 699,
+    price: 10,
     description:
       "Edición en vinilo del álbum más vendido de la historia. Incluye los clásicos que definieron el pop de los 80.",
     productType: "REGULAR",
@@ -29,7 +29,7 @@ export const products: Product[] = [
     name: "30",
     artist: "Adele",
     format: "CD",
-    price: 199,
+    price: 10,
     description:
       "El cuarto álbum de Adele, íntimo y cinematográfico. Edición en CD con libreto.",
     productType: "REGULAR",
@@ -50,7 +50,7 @@ export const products: Product[] = [
     name: "Back in Black",
     artist: "AC/DC",
     format: "VINYL",
-    price: 749,
+    price: 10,
     description:
       "Hard rock de referencia. Vinilo pesado, arte clásico y riffs que no envejecen.",
     productType: "REGULAR",
@@ -70,7 +70,7 @@ export const products: Product[] = [
     name: "Custom CD",
     artist: null,
     format: "CD",
-    price: 99,
+    price: 10,
     description:
       "Arma tu propio CD: sube las pistas, diseña la portada y agrega un mensaje. Ideal para regalos.",
     productType: "CUSTOM_TEMPLATE",
@@ -85,7 +85,7 @@ export const products: Product[] = [
     name: "Custom Vinyl",
     artist: null,
     format: "VINYL",
-    price: 799,
+    price: 10,
     description:
       "Un vinilo hecho bajo pedido. Eliges formato visual, tracks, empaque y dedicatoria.",
     productType: "CUSTOM_TEMPLATE",
@@ -100,7 +100,7 @@ export const products: Product[] = [
     name: "Abbey Road",
     artist: "The Beatles",
     format: "VINYL",
-    price: 799,
+    price: 10,
     description:
       "El cruce de Abbey Road en vinilo. El último álbum que grabaron juntos, remasterizado.",
     productType: "REGULAR",
@@ -120,7 +120,7 @@ export const products: Product[] = [
     name: "The Dark Side of the Moon",
     artist: "Pink Floyd",
     format: "VINYL",
-    price: 829,
+    price: 10,
     description:
       "Prisma, silencio y el lado oscuro. Edición en vinilo para escuchar de una sola sentada.",
     productType: "REGULAR",
@@ -141,7 +141,7 @@ export const products: Product[] = [
     name: "Un Verano Sin Ti",
     artist: "Bad Bunny",
     format: "CD",
-    price: 249,
+    price: 10,
     description:
       "El verano eterno en CD. Reguetón, bachata y nostalgia caribeña en un solo disco.",
     productType: "REGULAR",
@@ -161,7 +161,7 @@ export const products: Product[] = [
     name: "Random Access Memories",
     artist: "Daft Punk",
     format: "VINYL",
-    price: 899,
+    price: 10,
     description:
       "Disco, funk y analogía. Vinilo doble de la obra que devolvió el groove a las pistas.",
     productType: "REGULAR",
@@ -181,7 +181,7 @@ export const products: Product[] = [
     name: "Sour",
     artist: "Olivia Rodrigo",
     format: "CD",
-    price: 229,
+    price: 10,
     description:
       "Debut en CD: pop-punk, baladas y diarios abiertos. La banda sonora de una generación.",
     productType: "REGULAR",
