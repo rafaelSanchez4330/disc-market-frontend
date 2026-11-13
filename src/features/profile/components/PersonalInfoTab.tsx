@@ -25,7 +25,12 @@ export function PersonalInfoTab({ initialPreferences, onPreferencesUpdated }: Pr
 
   const [name, setName] = useState(user?.name || "");
   const [phone, setPhone] = useState(initialPreferences?.phone || "");
-  const [avatarUrl, setAvatarUrl] = useState(initialPreferences?.avatar_url || "");
+  // Solo las URLs van en el campo de imagen; un emoji guardado lo volvía inválido y el
+  // navegador bloqueaba en silencio el envío del formulario.
+  const [avatarUrl, setAvatarUrl] = useState(() => {
+    const saved = initialPreferences?.avatar_url || "";
+    return /^https?:\/\//i.test(saved) ? saved : "";
+  });
   const [selectedEmoji, setSelectedEmoji] = useState<string>(() => {
     const found = PRESET_AVATARS.find((a) => a.emoji === initialPreferences?.avatar_url);
     return found ? found.emoji : "";
@@ -44,8 +49,9 @@ export function PersonalInfoTab({ initialPreferences, onPreferencesUpdated }: Pr
       const finalAvatar = selectedEmoji || avatarUrl.trim() || null;
       const res = await userService.updateProfile({
         name: name.trim(),
-        phone: phone.trim() || undefined,
-        avatar_url: finalAvatar || undefined,
+        // Cadena vacía = borrar el dato en el backend (undefined lo dejaba sin cambios).
+        phone: phone.trim(),
+        avatar_url: finalAvatar ?? "",
       });
 
       updateUser({

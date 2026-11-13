@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { usePreferences } from "../../context/PreferencesContext";
 import { formatPrice } from "../../data/products";
 import { userService } from "../../shared/api/services/userService";
 import type { BackendUserPreference, BackendUserProfileResponse } from "../../shared/api/types";
@@ -16,6 +17,7 @@ type TabKey = "summary" | "personal" | "address" | "security" | "preferences" | 
 export function ProfilePage() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const { setPreferences } = usePreferences();
 
   const [activeTab, setActiveTab] = useState<TabKey>("summary");
   const [profileData, setProfileData] = useState<BackendUserProfileResponse | null>(null);
@@ -38,6 +40,8 @@ export function ProfilePage() {
 
   const handlePreferencesUpdated = (newPrefs: BackendUserPreference) => {
     setProfileData((prev) => (prev ? { ...prev, preferences: newPrefs } : null));
+    // Aplica en toda la plataforma al instante (tema, formato preferido, avatar).
+    setPreferences(newPrefs);
   };
 
   if (authLoading || loading) {
