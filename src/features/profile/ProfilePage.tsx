@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { usePreferences } from "../../context/PreferencesContext";
 import { formatPrice } from "../../data/products";
@@ -17,9 +17,14 @@ type TabKey = "summary" | "personal" | "address" | "security" | "preferences" | 
 export function ProfilePage() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { setPreferences } = usePreferences();
 
-  const [activeTab, setActiveTab] = useState<TabKey>("summary");
+  const initialTab = searchParams.get("tab") as TabKey | null;
+  const validTabs: TabKey[] = ["summary", "personal", "address", "security", "preferences", "orders"];
+  const [activeTab, setActiveTab] = useState<TabKey>(
+    initialTab && validTabs.includes(initialTab) ? initialTab : "summary"
+  );
   const [profileData, setProfileData] = useState<BackendUserProfileResponse | null>(null);
   const [loading, setLoading] = useState(true);
 

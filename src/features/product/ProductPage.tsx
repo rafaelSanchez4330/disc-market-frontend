@@ -17,6 +17,7 @@ export function ProductPage() {
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
+  const [justAdded, setJustAdded] = useState(false);
   const { addItem } = useCart();
   const { push } = useToast();
   const navigate = useNavigate();
@@ -78,6 +79,8 @@ export function ProductPage() {
         format: selected.format, unitPrice: selected.price, cover: selected.cover,
         imageUrl: selected.imageUrl, quantity,
       });
+      setJustAdded(true);
+      window.setTimeout(() => setJustAdded(false), 900);
       push("Agregado al carrito");
     } catch (error) { push(error instanceof Error ? error.message : 'No se pudo añadir el producto.'); }
   }
@@ -122,8 +125,12 @@ export function ProductPage() {
                 className="w-14 bg-transparent text-center outline-none"
               />
             </label>
-            <Button onClick={addToCart} disabled={soldOut || !Number.isSafeInteger(quantity) || quantity < 1 || quantity > (selected.stock ?? 1)}>
-              Agregar al carrito
+            <Button
+              onClick={addToCart}
+              disabled={soldOut || !Number.isSafeInteger(quantity) || quantity < 1 || quantity > (selected.stock ?? 1)}
+              className={`transition-transform duration-200 ${justAdded ? "scale-105" : "active:scale-95"}`}
+            >
+              {justAdded ? "✓ ¡Agregado!" : "Agregar al carrito"}
             </Button>
           </div>
         )}

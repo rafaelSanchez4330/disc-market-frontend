@@ -29,9 +29,10 @@ export function CartPage() {
   const { push } = useToast();
   const navigate = useNavigate();
 
-  const [shippingAddress, setShippingAddress] = useState(
-    "Av. Insurgentes Sur 1450, Col. Actipan, CDMX"
-  );
+  const [shippingAddress, setShippingAddress] = useState("");
+  const [savedDefaultAddress, setSavedDefaultAddress] = useState("");
+  const [saveAddressToProfile, setSaveAddressToProfile] = useState(false);
+  const [isSavingAddress, setIsSavingAddress] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -52,14 +53,42 @@ export function CartPage() {
               .join(", ");
             if (formatted) {
               setShippingAddress(formatted);
+              setSavedDefaultAddress(formatted);
             }
+          } else {
+            setShippingAddress("");
+            setSavedDefaultAddress("");
           }
         })
         .catch(() => {
-          // Si falla, se conserva la dirección por defecto
+          // Si falla la consulta, permanece vacío para que el usuario ingrese su dirección
         });
+    } else {
+      setShippingAddress("");
+      setSavedDefaultAddress("");
     }
   }, [user]);
+
+  async function handleSaveAddressInline() {
+    const trimmed = shippingAddress.trim();
+    if (trimmed.length < 5) {
+      push("Por favor ingresa una dirección de entrega válida (mínimo 5 caracteres).");
+      return;
+    }
+    setIsSavingAddress(true);
+    try {
+      await userService.updatePreferences({
+        default_address_line1: trimmed,
+      });
+      setSavedDefaultAddress(trimmed);
+      setSaveAddressToProfile(false);
+      push("¡Dirección guardada como predeterminada en tu perfil!");
+    } catch (err: any) {
+      push(err?.message || "No se pudo guardar la dirección en tu perfil.");
+    } finally {
+      setIsSavingAddress(false);
+    }
+  }
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [stripeClientSecret, setStripeClientSecret] = useState<string | null>(null);
   const [stripeAmount, setStripeAmount] = useState<number>(0);
@@ -102,6 +131,12 @@ export function CartPage() {
       return;
     }
 
+    const trimmedAddress = shippingAddress.trim();
+    if (!trimmedAddress || trimmedAddress.length < 5) {
+      push("Por favor ingresa una dirección de entrega para continuar con el pago.");
+      return;
+    }
+
     // Si existen cambios locales sin persistir, sincronizar con el backend antes de cobrar
     if (isPendingSync) {
       push("Sincronizando los cambios del carrito con el servidor...");
@@ -115,7 +150,15 @@ export function CartPage() {
 
     setIsSubmitting(true);
     try {
-      const intent = await paymentService.createIntent({ userId, shippingAddress, shippingMethod: 'Envío Estándar Disc Market' });
+      if (saveAddressToProfile && trimmedAddress !== savedDefaultAddress) {
+        await userService.updatePreferences({
+          default_address_line1: trimmedAddress,
+        });
+        setSavedDefaultAddress(trimmedAddress);
+        setSaveAddressToProfile(false);
+      }
+
+      const intent = await paymentService.createIntent({ userId, shippingAddress: trimmedAddress, shippingMethod: 'Envío Estándar Disc Market' });
       setStripeClientSecret(intent.clientSecret);
       setStripeIntentId(intent.paymentIntentId);
       setStripeAmount(intent.amount);
@@ -184,7 +227,7 @@ export function CartPage() {
         {items.map((item) => (
           <article
             key={item.id}
-            className="flex gap-4 rounded-2xl border border-line bg-card p-4 transition-all"
+            className="animate-step-enter flex gap-4 rounded-2xl border border-line bg-card p-4 transition-all duration-200 hover:border-accent/50"
           >
             <AlbumCover
               cover={item.cover}
@@ -235,7 +278,7 @@ export function CartPage() {
         ))}
       </section>
 
-      <aside className="h-fit rounded-2xl border border-line bg-ink-soft p-5 space-y-4">
+      <aside className="animate-modal-pop h-fit rounded-2xl border border-line bg-ink-soft p-5 space-y-4">
         <h2 className="font-display text-2xl">Resumen</h2>
 
         <dl className="space-y-2 text-sm">
@@ -257,16 +300,57 @@ export function CartPage() {
 
         {user ? (
           <div className="space-y-3 pt-2 border-t border-line">
-            <div>
-              <label className="text-xs font-semibold text-muted block mb-1">
-                Dirección de entrega
-              </label>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <label className="text-xs font-semibold text-muted block">
+                  Dirección de entrega *
+                </label>
+                <Link
+                  to="/perfil?tab=address"
+                  className="text-[11px] font-medium text-accent hover:underline"
+                >
+                  {savedDefaultAddress ? "Editar en mi perfil →" : "Configurar en mi perfil →"}
+                </Link>
+              </div>
+
+              {!savedDefaultAddress && (
+                <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-2.5 py-1.5 text-[11px] text-amber-200">
+                  No tienes una dirección predeterminada configurada. Ingrésala aquí para tu pedido o establécela en tu perfil.
+                </p>
+              )}
+
               <input
                 type="text"
+                placeholder="Calle y número, colonia, ciudad, estado y C.P."
                 value={shippingAddress}
                 onChange={(e) => setShippingAddress(e.target.value)}
-                className="w-full rounded-xl border border-line bg-ink px-3 py-2 text-xs text-foreground focus:outline-none focus:border-accent"
+                className="w-full rounded-xl border border-line bg-ink px-3 py-2 text-xs text-foreground placeholder:text-muted/50 focus:outline-none focus:border-accent"
               />
+
+              {shippingAddress.trim().length >= 5 &&
+                shippingAddress.trim() !== savedDefaultAddress && (
+                  <div className="flex flex-col gap-2 pt-1">
+                    <label className="flex items-center gap-2 text-xs text-muted cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={saveAddressToProfile}
+                        onChange={(e) => setSaveAddressToProfile(e.target.checked)}
+                        className="rounded border-line bg-ink text-accent focus:ring-accent"
+                      />
+                      <span>Guardar como mi dirección predeterminada al pagar</span>
+                    </label>
+                    <button
+                      type="button"
+                      disabled={isSavingAddress}
+                      onClick={() => {
+                        void handleSaveAddressInline();
+                      }}
+                      className="self-start text-[11px] font-medium text-accent hover:underline disabled:opacity-50 cursor-pointer"
+                    >
+                      {isSavingAddress ? "Guardando dirección..." : "💾 Guardar dirección ahora en mi perfil"}
+                    </button>
+                  </div>
+                )}
             </div>
             <div>
               <label className="text-xs font-semibold text-muted block mb-1">
@@ -321,8 +405,8 @@ export function OrderOkPage() {
     | undefined;
 
   return (
-    <div className="mx-auto max-w-xl rounded-3xl border border-line bg-card p-8 text-center shadow-2xl">
-      <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-400">
+    <div className="animate-modal-pop mx-auto max-w-xl rounded-3xl border border-line bg-card p-8 text-center shadow-2xl">
+      <div className="animate-badge-pop mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-400">
         <svg
           className="h-8 w-8"
           fill="none"

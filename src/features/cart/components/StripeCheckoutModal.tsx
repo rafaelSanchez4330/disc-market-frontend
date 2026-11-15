@@ -165,7 +165,7 @@ export function StripeCheckoutModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm animate-fade-in">
-      <div className="relative flex flex-col w-full max-w-lg max-h-[90vh] rounded-3xl border border-line bg-ink-soft shadow-2xl overflow-hidden">
+      <div className="animate-modal-pop relative flex flex-col w-full max-w-lg max-h-[90vh] rounded-3xl border border-line bg-ink-soft shadow-2xl overflow-hidden">
         {/* Header fijo */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-line flex-shrink-0 bg-ink-soft">
           <div className="flex items-center gap-2">

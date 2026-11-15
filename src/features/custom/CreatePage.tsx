@@ -405,15 +405,20 @@ export function CreatePage() {
         {steps.map((label, index) => (
           <li
             key={label}
-            className={`rounded-full border px-3 py-2 text-center ${index === step ? "border-accent text-accent" : "border-line text-muted"
-              }`}
+            className={`rounded-full border px-3 py-2 text-center transition-all duration-200 ${
+              index === step
+                ? "border-accent bg-accent/10 text-accent scale-[1.02] font-semibold"
+                : index < step
+                ? "border-accent/40 text-cream/80"
+                : "border-line text-muted"
+            }`}
           >
             {index + 1}. {label}
           </li>
         ))}
       </ol>
 
-      <section className="rounded-3xl border border-line bg-card p-6">
+      <section key={step} className="animate-step-enter rounded-3xl border border-line bg-card p-6">
         {step === 0 ? (
           <div className="grid gap-4 md:grid-cols-2">
             {customTemplates.map((item) => {
