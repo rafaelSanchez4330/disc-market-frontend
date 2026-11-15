@@ -145,7 +145,7 @@ export function LoginPage() {
           className={`flex items-center justify-center gap-2 rounded-xl py-2 text-sm font-medium transition ${
             mode === "password"
               ? "bg-card text-accent shadow-sm border border-line/60"
-              : "text-muted hover:text-white"
+              : "text-muted hover:text-cream"
           }`}
         >
           <span>🔑</span> Contraseña
@@ -156,7 +156,7 @@ export function LoginPage() {
           className={`flex items-center justify-center gap-2 rounded-xl py-2 text-sm font-medium transition ${
             mode === "otp"
               ? "bg-card text-accent shadow-sm border border-line/60"
-              : "text-muted hover:text-white"
+              : "text-muted hover:text-cream"
           }`}
         >
           <span>⚡</span> Código OTP
@@ -173,7 +173,7 @@ export function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="tu@correo.com"
-              className="w-full rounded-xl border border-line bg-ink px-3 py-2 text-white focus:border-accent focus:outline-none transition"
+              className="w-full rounded-xl border border-line bg-ink px-3 py-2 text-cream focus:border-accent focus:outline-none transition"
               disabled={loading}
               required
             />
@@ -193,7 +193,7 @@ export function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
-              className="w-full rounded-xl border border-line bg-ink px-3 py-2 text-white focus:border-accent focus:outline-none transition"
+              className="w-full rounded-xl border border-line bg-ink px-3 py-2 text-cream focus:border-accent focus:outline-none transition"
               disabled={loading}
               required
             />
@@ -221,7 +221,7 @@ export function LoginPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="tu@correo.com"
-                  className="w-full rounded-xl border border-line bg-ink px-3 py-2 text-white focus:border-accent focus:outline-none transition"
+                  className="w-full rounded-xl border border-line bg-ink px-3 py-2 text-cream focus:border-accent focus:outline-none transition"
                   disabled={loading}
                   required
                 />
@@ -237,7 +237,7 @@ export function LoginPage() {
             <form onSubmit={onVerifyOtp} className="space-y-5">
               <div className="rounded-xl border border-line/60 bg-ink/40 p-3 text-center">
                 <p className="text-xs text-muted">
-                  Código enviado a <span className="font-semibold text-white">{email}</span>
+                  Código enviado a <span className="font-semibold text-cream">{email}</span>
                 </p>
                 <button
                   type="button"
@@ -282,7 +282,7 @@ export function LoginPage() {
                 {countdown > 0 ? (
                   <p className="text-xs text-muted">
                     Podrás solicitar otro código en{" "}
-                    <span className="font-semibold text-white">{countdown}s</span>
+                    <span className="font-semibold text-cream">{countdown}s</span>
                   </p>
                 ) : (
                   <button

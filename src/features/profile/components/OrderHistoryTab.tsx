@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { formatPrice } from "../../../data/products";
 import { userService } from "../../../shared/api/services/userService";
@@ -19,15 +19,26 @@ const STATUS_LABELS: Record<string, { label: string; style: string }> = {
 export function OrderHistoryTab() {
   const [orders, setOrders] = useState<BackendOrder[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [copiedTracking, setCopiedTracking] = useState<string | null>(null);
 
-  useEffect(() => {
+  const loadOrders = useCallback(() => {
+    setLoading(true);
+    setLoadError(null);
     userService
       .getOrders()
       .then((data) => setOrders(data))
-      .catch((err) => console.error("Error al cargar pedidos:", err))
+      .catch((err) => {
+        // Un fallo del servidor no significa "sin pedidos": se muestra el error con reintento.
+        console.error("Error al cargar pedidos:", err);
+        setLoadError(err instanceof Error ? err.message : "No se pudo cargar tu historial de pedidos.");
+      })
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    loadOrders();
+  }, [loadOrders]);
 
   const copyToClipboard = (trackingNumber: string) => {
     navigator.clipboard.writeText(trackingNumber);
@@ -44,6 +55,15 @@ export function OrderHistoryTab() {
           <div key={i} className="h-44 w-full animate-pulse rounded-2xl border border-line bg-card/60" />
         ))}
       </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <EmptyState title="No pudimos cargar tus pedidos">
+        <p className="text-sm text-muted mb-4">{loadError}</p>
+        <Button onClick={loadOrders}>Reintentar</Button>
+      </EmptyState>
     );
   }
 

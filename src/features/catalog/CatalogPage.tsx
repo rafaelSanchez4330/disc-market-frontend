@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { customTemplates, formatLabel } from "../../data/products";
 import type { Format, Product } from "../../data/types";
 import { productService } from "../../shared/api/services/productService";
+import { usePreferences } from "../../context/PreferencesContext";
 import type { BackendCategory } from "../../shared/api/types";
 import { EmptyState } from "../../shared/ui/EmptyState";
 import { ProductCard } from "../../shared/ui/ProductCard";
@@ -18,8 +19,17 @@ export function CatalogPage({ presetFormat }: Props) {
   const [categoriesList, setCategoriesList] = useState<BackendCategory[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const format = presetFormat ?? (params.get("formato") as Format | null);
+  const { preferredFormat } = usePreferences();
   const category = params.get("categoria") ?? "";
+  const formatParam = params.get("formato");
+  // Sin filtro explícito se usa el formato favorito del usuario (Mi cuenta → Preferencias).
+  const format: Format | null =
+    presetFormat ??
+    (formatParam === "CD" || formatParam === "VINYL"
+      ? formatParam
+      : formatParam === "ALL" || category === "Custom"
+        ? null
+        : preferredFormat);
   const artist = params.get("artista") ?? "";
   const maxPrice = Number(params.get("precio") ?? 0);
 
@@ -88,11 +98,11 @@ export function CatalogPage({ presetFormat }: Props) {
       {!presetFormat ? (
         <FilterGroup label="Formato">
           <select
-            value={format ?? ""}
+            value={format ?? "ALL"}
             onChange={(e) => setFilter("formato", e.target.value)}
             className="w-full rounded-xl border border-line bg-ink px-3 py-2"
           >
-            <option value="">Todos</option>
+            <option value="ALL">Todos</option>
             <option value="CD">CD</option>
             <option value="VINYL">Vinilo</option>
           </select>
@@ -148,6 +158,14 @@ export function CatalogPage({ presetFormat }: Props) {
           <p className="text-sm tracking-widest text-accent uppercase">Tienda</p>
           <h1 className="font-display text-4xl">{title}</h1>
           <p className="mt-2 text-muted">{loading ? "Cargando..." : `${visible.length} productos`}</p>
+          {!presetFormat && !formatParam && format ? (
+            <p className="mt-1 text-xs text-muted">
+              Mostrando tu formato favorito ({formatLabel[format]}).{" "}
+              <button type="button" className="text-accent underline cursor-pointer" onClick={() => setFilter("formato", "ALL")}>
+                Ver todos
+              </button>
+            </p>
+          ) : null}
         </div>
         <button
           type="button"

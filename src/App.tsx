@@ -2,6 +2,7 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AppLayout } from "./app/AppLayout";
 import { AuthProvider } from "./context/AuthContext";
 import { CartProvider } from "./context/CartContext";
+import { PreferencesProvider } from "./context/PreferencesContext";
 import { ToastProvider } from "./context/ToastContext";
 import { LoginPage } from "./features/auth/LoginPage";
 import { RegisterPage } from "./features/auth/RegisterPage";
@@ -18,6 +19,7 @@ import { AdminPage } from "./features/admin/AdminPage";
 export function App() {
   return (
     <AuthProvider>
+      <PreferencesProvider>
       <CartProvider>
         <ToastProvider>
           <BrowserRouter>
@@ -43,6 +45,7 @@ export function App() {
           </BrowserRouter>
         </ToastProvider>
       </CartProvider>
+      </PreferencesProvider>
     </AuthProvider>
   );
 }
