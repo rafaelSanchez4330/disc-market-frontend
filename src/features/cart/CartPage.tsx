@@ -227,7 +227,7 @@ export function CartPage() {
         {items.map((item) => (
           <article
             key={item.id}
-            className="flex gap-4 rounded-2xl border border-line bg-card p-4 transition-all"
+            className="animate-step-enter flex gap-4 rounded-2xl border border-line bg-card p-4 transition-all duration-200 hover:border-accent/50"
           >
             <AlbumCover
               cover={item.cover}
@@ -278,7 +278,7 @@ export function CartPage() {
         ))}
       </section>
 
-      <aside className="h-fit rounded-2xl border border-line bg-ink-soft p-5 space-y-4">
+      <aside className="animate-modal-pop h-fit rounded-2xl border border-line bg-ink-soft p-5 space-y-4">
         <h2 className="font-display text-2xl">Resumen</h2>
 
         <dl className="space-y-2 text-sm">
@@ -405,8 +405,8 @@ export function OrderOkPage() {
     | undefined;
 
   return (
-    <div className="mx-auto max-w-xl rounded-3xl border border-line bg-card p-8 text-center shadow-2xl">
-      <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-400">
+    <div className="animate-modal-pop mx-auto max-w-xl rounded-3xl border border-line bg-card p-8 text-center shadow-2xl">
+      <div className="animate-badge-pop mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-400">
         <svg
           className="h-8 w-8"
           fill="none"

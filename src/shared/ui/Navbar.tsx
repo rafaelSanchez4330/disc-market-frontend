@@ -42,11 +42,14 @@ export function Navbar() {
           {user?.role === "admin" && <Link to="/admin" className="hidden rounded-full border border-accent/60 px-3 py-1.5 text-sm text-accent sm:inline-flex">Administración</Link>}
           <Link
             to="/carrito"
-            className="relative rounded-full border border-line px-3 py-1.5 text-sm hover:border-accent"
+            className="relative rounded-full border border-line px-3 py-1.5 text-sm transition-all duration-200 hover:border-accent hover:scale-[1.03] active:scale-95"
           >
             Carrito
             {count > 0 ? (
-              <span className="absolute -top-2 -right-2 grid h-5 min-w-5 place-items-center rounded-full bg-vinyl px-1 text-[11px] font-bold">
+              <span
+                key={count}
+                className="animate-badge-pop absolute -top-2 -right-2 grid h-5 min-w-5 place-items-center rounded-full bg-vinyl px-1 text-[11px] font-bold"
+              >
                 {count}
               </span>
             ) : null}

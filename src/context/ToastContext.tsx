@@ -19,7 +19,10 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     <ToastContext.Provider value={value}>
       {children}
       {message ? (
-        <div className="fixed right-4 bottom-4 z-50 rounded-full bg-accent px-4 py-2 text-sm font-semibold text-ink shadow-lg">
+        <div
+          key={message}
+          className="animate-toast-in fixed right-4 bottom-4 z-50 rounded-full bg-accent px-4 py-2 text-sm font-semibold text-ink shadow-lg"
+        >
           {message}
         </div>
       ) : null}
