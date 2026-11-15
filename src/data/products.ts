@@ -13,6 +13,7 @@ export const products: Product[] = [
     productType: "REGULAR",
     isCustomizable: false,
     availabilityStatus: "AVAILABLE",
+    imageUrl: "https://coverartarchive.org/release-group/f32fab67-77dd-3937-addc-9062e28e4c37/front-500",
     cover: { from: "#1b1024", to: "#c45a12", motif: "burst" },
     tracks: [
       { trackName: "Wanna Be Startin' Somethin'", trackOrder: 1, durationSeconds: 363 },
@@ -35,6 +36,7 @@ export const products: Product[] = [
     productType: "REGULAR",
     isCustomizable: false,
     availabilityStatus: "AVAILABLE",
+    imageUrl: "https://coverartarchive.org/release-group/d8a99910-33c2-481d-9b96-085ece5545f6/front-500",
     cover: { from: "#2a2218", to: "#d4b483", motif: "wave" },
     tracks: [
       { trackName: "Strangers by Nature", trackOrder: 1, durationSeconds: 182 },
@@ -56,6 +58,7 @@ export const products: Product[] = [
     productType: "REGULAR",
     isCustomizable: false,
     availabilityStatus: "LOW_STOCK",
+    imageUrl: "https://coverartarchive.org/release-group/d3bc1a64-7561-3787-b680-0003aa50f8f1/front-500",
     cover: { from: "#0d0d0d", to: "#3d3d3d", motif: "bars" },
     tracks: [
       { trackName: "Hells Bells", trackOrder: 1, durationSeconds: 312 },
@@ -106,6 +109,7 @@ export const products: Product[] = [
     productType: "REGULAR",
     isCustomizable: false,
     availabilityStatus: "AVAILABLE",
+    imageUrl: "https://coverartarchive.org/release-group/9162580e-5df4-32de-80cc-f45a8d8a9b1d/front-500",
     cover: { from: "#1a2e1a", to: "#c4a35a", motif: "bars" },
     tracks: [
       { trackName: "Come Together", trackOrder: 1, durationSeconds: 260 },
@@ -126,6 +130,7 @@ export const products: Product[] = [
     productType: "REGULAR",
     isCustomizable: false,
     availabilityStatus: "AVAILABLE",
+    imageUrl: "https://coverartarchive.org/release-group/956fbc58-362d-43b8-b880-3779e0508559/front-500",
     cover: { from: "#0b0b12", to: "#7b5cff", motif: "burst" },
     tracks: [
       { trackName: "Speak to Me / Breathe", trackOrder: 1, durationSeconds: 283 },
@@ -147,6 +152,7 @@ export const products: Product[] = [
     productType: "REGULAR",
     isCustomizable: false,
     availabilityStatus: "AVAILABLE",
+    imageUrl: "https://coverartarchive.org/release-group/e992b449-141b-4aea-b07b-9b2a478a8570/front-500",
     cover: { from: "#0e2a3a", to: "#f2a65a", motif: "wave" },
     tracks: [
       { trackName: "Moscow Mule", trackOrder: 1, durationSeconds: 245 },
@@ -167,6 +173,7 @@ export const products: Product[] = [
     productType: "REGULAR",
     isCustomizable: false,
     availabilityStatus: "LOW_STOCK",
+    imageUrl: "https://coverartarchive.org/release-group/aa997ea0-2936-40bd-884d-3af8a0e064dc/front-500",
     cover: { from: "#1a1a1a", to: "#d8d8d8", motif: "grid" },
     tracks: [
       { trackName: "Give Life Back to Music", trackOrder: 1, durationSeconds: 274 },
@@ -187,6 +194,7 @@ export const products: Product[] = [
     productType: "REGULAR",
     isCustomizable: false,
     availabilityStatus: "AVAILABLE",
+    imageUrl: "https://coverartarchive.org/release-group/2ae2e504-7116-4b4f-b632-9748bb18ccd2/front-500",
     cover: { from: "#3d1f2b", to: "#f2c6d4", motif: "rings" },
     tracks: [
       { trackName: "brutal", trackOrder: 1, durationSeconds: 143 },
