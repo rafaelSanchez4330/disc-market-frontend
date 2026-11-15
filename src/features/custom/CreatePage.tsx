@@ -17,7 +17,7 @@ import {
   customProductService,
   type CustomPricingResponse,
 } from "../../shared/api/services/customProductService";
-import { AlbumCover } from "../../shared/ui/AlbumCover";
+import { AlbumCover, DiscIllustration } from "../../shared/ui/AlbumCover";
 import { Button } from "../../shared/ui/Button";
 
 const steps = ["Formato", "Pistas", "Portada", "Detalles", "Resumen"] as const;
@@ -376,9 +376,8 @@ export function CreatePage() {
         unitPrice: currentPrice,
         cover: template.cover,
         imageUrl: serverImageUrl || previewUrl,
-        customSummary: `${draft.tracks.length} pistas (${formatDuration(totalDuration)}) · ${
-          packagingLabel[draft.packaging]
-        }${draft.coverName ? ` · ${draft.coverName}` : ""}`,
+        customSummary: `${draft.tracks.length} pistas (${formatDuration(totalDuration)}) · ${packagingLabel[draft.packaging]
+          }${draft.coverName ? ` · ${draft.coverName}` : ""}`,
       });
 
       push("¡Disco personalizado creado, audios validados y guardado en la orden!");
@@ -387,7 +386,7 @@ export function CreatePage() {
       console.error("Error al procesar el disco personalizado:", err);
       push(
         err.message ||
-          "No se pudo agregar el disco personalizado. Revisa tu sesión, audios o existencias y vuelve a intentar."
+        "No se pudo agregar el disco personalizado. Revisa tu sesión, audios o existencias y vuelve a intentar."
       );
     } finally {
       setSubmitting(false);
@@ -405,13 +404,12 @@ export function CreatePage() {
         {steps.map((label, index) => (
           <li
             key={label}
-            className={`rounded-full border px-3 py-2 text-center transition-all duration-200 ${
-              index === step
+            className={`rounded-full border px-3 py-2 text-center transition-all duration-200 ${index === step
                 ? "border-accent bg-accent/10 text-accent scale-[1.02] font-semibold"
                 : index < step
-                ? "border-accent/40 text-cream/80"
-                : "border-line text-muted"
-            }`}
+                  ? "border-accent/40 text-cream/80"
+                  : "border-line text-muted"
+              }`}
           >
             {index + 1}. {label}
           </li>
@@ -424,23 +422,41 @@ export function CreatePage() {
             {customTemplates.map((item) => {
               const displayPrice = pricing && pricing[item.format] ? pricing[item.format].base_price : item.price;
               const displayDesc = pricing && pricing[item.format] ? pricing[item.format].description : item.description;
+              const isSelected = draft.format === item.format;
 
               return (
                 <button
                   key={item.productId}
                   type="button"
                   onClick={() => setDraft((d) => ({ ...d, format: item.format }))}
-                  className={`rounded-2xl border p-5 text-left transition ${draft.format === item.format ? "border-accent" : "border-line hover:border-accent/50"
+                  className={`group relative overflow-hidden rounded-2xl border p-5 text-left transition-all duration-200 cursor-pointer ${isSelected
+                      ? "border-accent bg-accent/10 shadow-lg ring-1 ring-accent/40"
+                      : "border-line bg-ink/40 hover:border-accent/50 hover:-translate-y-0.5"
                     }`}
                 >
-                  <p className="font-display text-2xl">{formatLabel[item.format]}</p>
-                  <p className="mt-2 text-muted">{displayDesc}</p>
-                  <div className="mt-3 flex items-center justify-between text-xs">
-                    <span className="text-muted">
-                      {item.format === "CD" ? "Límite: 80 min / 20 pistas" : "Límite: 44 min (22/lado) / 12 pistas"}
-                    </span>
-                    <span className="text-accent font-semibold text-base">{formatPrice(displayPrice)}</span>
-                  </div>
+                    <div className="flex items-center gap-4">
+                      <div className="relative flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl border border-line/80 bg-ink p-2 shadow-inner">
+                        <DiscIllustration format={item.format} className="h-16 w-16" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="font-display text-2xl text-cream">
+                            {formatLabel[item.format]}
+                          </p>
+                          <span className="rounded-full bg-accent/15 px-2.5 py-0.5 text-xs font-semibold text-accent">
+                            {item.format === "CD" ? "💿 Óptico Digital" : "🎵 Analógico 12\""}
+                          </span>
+                        </div>
+                        <p className="mt-1.5 text-sm text-muted line-clamp-2">{displayDesc}</p>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 flex items-center justify-between border-t border-line/60 pt-3 text-xs">
+                      <span className="text-muted">
+                        {item.format === "CD" ? "Límite: 80 min / 20 pistas" : "Límite: 44 min (22/lado) / 12 pistas"}
+                      </span>
+                      <span className="text-accent font-semibold text-base">{formatPrice(displayPrice)}</span>
+                    </div>
                 </button>
               );
             })}
@@ -643,16 +659,16 @@ export function CreatePage() {
               {submitting
                 ? "Procesando audios y orden..."
                 : isOverCapacity
-                ? "Capacidad física excedida"
-                : hasFlaggedTracks
-                ? "Conflicto de copyright"
-                : isAnalyzingTracks
-                ? "Analizando pistas..."
-                : draft.tracks.some((t) => t.copyrightStatus !== "VERIFIED")
-                ? "Pistas pendientes de verificar"
-                : !draft.disclaimerAccepted
-                ? "Acepta la declaración jurada"
-                : "Agregar al carrito"}
+                  ? "Capacidad física excedida"
+                  : hasFlaggedTracks
+                    ? "Conflicto de copyright"
+                    : isAnalyzingTracks
+                      ? "Analizando pistas..."
+                      : draft.tracks.some((t) => t.copyrightStatus !== "VERIFIED")
+                        ? "Pistas pendientes de verificar"
+                        : !draft.disclaimerAccepted
+                          ? "Acepta la declaración jurada"
+                          : "Agregar al carrito"}
             </Button>
           )}
         </div>

@@ -71,7 +71,7 @@ export const products: Product[] = [
     productId: 4,
     category: "Custom",
     name: "Custom CD",
-    artist: null,
+    artist: "Personaliza tus pistas y portada",
     format: "CD",
     price: 10,
     description:
@@ -80,13 +80,14 @@ export const products: Product[] = [
     isCustomizable: true,
     availabilityStatus: "AVAILABLE",
     cover: { from: "#12202b", to: "#e8a23a", motif: "grid" },
+    imageUrl: "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?auto=format&fit=crop&w=700&q=80",
     tracks: [],
   },
   {
     productId: 5,
     category: "Custom",
     name: "Custom Vinyl",
-    artist: null,
+    artist: "Corte artesanal a tu medida",
     format: "VINYL",
     price: 10,
     description:
@@ -95,6 +96,7 @@ export const products: Product[] = [
     isCustomizable: true,
     availabilityStatus: "MADE_TO_ORDER",
     cover: { from: "#2b1218", to: "#c43c3c", motif: "rings" },
+    imageUrl: "https://images.unsplash.com/photo-1539185441755-769473a23570?auto=format&fit=crop&w=700&q=80",
     tracks: [],
   },
   {
