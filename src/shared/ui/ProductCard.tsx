@@ -17,6 +17,8 @@ export function ProductCard({ product }: { product: Product }) {
           imageUrl={product.imageUrl}
           title={product.name}
           artist={product.artist}
+          discFormat={product.format}
+          showDiscBadge={product.isCustomizable}
         />
         <div className="space-y-3 p-4">
           <div className="flex items-start justify-between gap-3">
