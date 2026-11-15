@@ -405,10 +405,10 @@ export function CreatePage() {
           <li
             key={label}
             className={`rounded-full border px-3 py-2 text-center transition-all duration-200 ${index === step
-                ? "border-accent bg-accent/10 text-accent scale-[1.02] font-semibold"
-                : index < step
-                  ? "border-accent/40 text-cream/80"
-                  : "border-line text-muted"
+              ? "border-accent bg-accent/10 text-accent scale-[1.02] font-semibold"
+              : index < step
+                ? "border-accent/40 text-cream/80"
+                : "border-line text-muted"
               }`}
           >
             {index + 1}. {label}
@@ -430,33 +430,33 @@ export function CreatePage() {
                   type="button"
                   onClick={() => setDraft((d) => ({ ...d, format: item.format }))}
                   className={`group relative overflow-hidden rounded-2xl border p-5 text-left transition-all duration-200 cursor-pointer ${isSelected
-                      ? "border-accent bg-accent/10 shadow-lg ring-1 ring-accent/40"
-                      : "border-line bg-ink/40 hover:border-accent/50 hover:-translate-y-0.5"
+                    ? "border-accent bg-accent/10 shadow-lg ring-1 ring-accent/40"
+                    : "border-line bg-ink/40 hover:border-accent/50 hover:-translate-y-0.5"
                     }`}
                 >
-                    <div className="flex items-center gap-4">
-                      <div className="relative flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl border border-line/80 bg-ink p-2 shadow-inner">
-                        <DiscIllustration format={item.format} className="h-16 w-16" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center justify-between gap-2">
-                          <p className="font-display text-2xl text-cream">
-                            {formatLabel[item.format]}
-                          </p>
-                          <span className="rounded-full bg-accent/15 px-2.5 py-0.5 text-xs font-semibold text-accent">
-                            {item.format === "CD" ? "💿 Óptico Digital" : "🎵 Analógico 12\""}
-                          </span>
-                        </div>
-                        <p className="mt-1.5 text-sm text-muted line-clamp-2">{displayDesc}</p>
-                      </div>
+                  <div className="flex items-center gap-4">
+                    <div className="relative flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl border border-line/80 bg-ink p-2 shadow-inner">
+                      <DiscIllustration format={item.format} className="h-16 w-16" />
                     </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="font-display text-2xl text-cream">
+                          {formatLabel[item.format]}
+                        </p>
+                        <span className="rounded-full bg-accent/15 px-2.5 py-0.5 text-xs font-semibold text-accent">
+                          {item.format === "CD" ? "Óptico Digital" : "Analógico 12\""}
+                        </span>
+                      </div>
+                      <p className="mt-1.5 text-sm text-muted line-clamp-2">{displayDesc}</p>
+                    </div>
+                  </div>
 
-                    <div className="mt-4 flex items-center justify-between border-t border-line/60 pt-3 text-xs">
-                      <span className="text-muted">
-                        {item.format === "CD" ? "Límite: 80 min / 20 pistas" : "Límite: 44 min (22/lado) / 12 pistas"}
-                      </span>
-                      <span className="text-accent font-semibold text-base">{formatPrice(displayPrice)}</span>
-                    </div>
+                  <div className="mt-4 flex items-center justify-between border-t border-line/60 pt-3 text-xs">
+                    <span className="text-muted">
+                      {item.format === "CD" ? "Límite: 80 min / 20 pistas" : "Límite: 44 min (22/lado) / 12 pistas"}
+                    </span>
+                    <span className="text-accent font-semibold text-base">{formatPrice(displayPrice)}</span>
+                  </div>
                 </button>
               );
             })}

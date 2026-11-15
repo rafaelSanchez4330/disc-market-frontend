@@ -82,9 +82,9 @@ export function mapBackendProduct(p: BackendProduct): Product {
 
   const price = typeof p.price === "string" ? parseFloat(p.price) : Number(p.price || 0);
   const format = normalizeFormat(p.format);
-  const imageUrl = resolveAssetUrl(p.image_url);
-  const cover = generateCoverTheme(p.name, p.product_id);
   const isCustom = isCustomTemplateProduct(p);
+  const imageUrl = isCustom ? null : resolveAssetUrl(p.image_url);
+  const cover = generateCoverTheme(p.name, p.product_id);
   if (isCustom) availabilityStatus = "MADE_TO_ORDER";
 
   return {
@@ -163,9 +163,8 @@ export function mapBackendCartItem(item: BackendCartItem): CartItem {
       unitPrice,
       cover,
       imageUrl,
-      customSummary: `${cp.packaging_option ? `Empaque ${cp.packaging_option}` : "Personalizado"}${
-        cp.custom_tracks?.length ? ` · ${cp.custom_tracks.length} pistas` : ""
-      }`,
+      customSummary: `${cp.packaging_option ? `Empaque ${cp.packaging_option}` : "Personalizado"}${cp.custom_tracks?.length ? ` · ${cp.custom_tracks.length} pistas` : ""
+        }`,
     };
   }
 
